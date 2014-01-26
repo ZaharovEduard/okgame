@@ -1,30 +1,46 @@
-import ok
+import queue
 import pygame as pg
+from pymunk.vec2d import Vec2d as vec
+from ok import *
+from main_objects import *
+from  server import *
 def game():
-    def eff(magic, dist):
-        return 2*magic[0]
-    def eff2(magic, dist):
-        return -2*magic[0]
-    ser = ok.Server()
-    p1 = ok.Player([300,400],[0, 0], [100,100,100])
-    p2 = ok.Player([400,300],[0,0], [100,100,100])
-    p3 = ok.Player([30,500],[0,0], [100,100,100])
-    p4 = ok.Player([700,300],[0,0], [100,100,100])
-    p5 = ok.Player([100,20],[0,0], [100,100,100])
-    p6 = ok.Player([600,20],[0,0], [100,100,100])
-    arm = ok.Armor(p2, eff)
-    arm2 = ok.Armor(p1, eff2)
+    qu = queue.Queue()
+    ser = Physics_server(qu,(1000,1000))
+    ser.daemon = True
+    ser.start()
+    print(ser.field_size)
+    p1 = Player([300,400],[0, 0], [100,100,100])
+    p2 = Player([400,300],[10,0], [100,100,100])
+    p3 = Player([30,500],[0,0], [100,100,100])
+    p4 = Player([700,300],[0,0], [100,100,100])
+    p5 = Player([100,20],[0,0], [100,100,100])
+    p6 = Player([600,20],[0,0], [100,100,100])
+    arm = Armor(p2, [-10,-10,-10 ],[100,100,100])
+    arm2 = Armor(p1, [-30,-30,-30],[100,100, 100])
+    arm3 = Armor(p3, [-30,-30,-30],[10,40, -30])
+    arm4 = Armor(p4, [40,-80,-70],[0,0, 0])
+    arm5 = Armor(p5, [0,0,0],[90,90, 90])
+    #arm3 = ok.Armor(p1, [-20,0,-10],[-10,-30, -20])
+    #arm4 = ok.Armor(p1, [-40,0,-20],[40,40, 40])
     p1.armor = arm2
     p2.armor = arm
-    fb = ok.Fireball([100,200],[10, 10], [10,10,10])
-    ser.send(['add_env',[fb]])
-    ser.send(['add_player',[p1]])
-    ser.send(['add_player',[p2]])
-    ser.send(['add_player',[p3]])
-    ser.send(['add_player',[p4]])
-    ser.send(['add_player',[p5]])
-    ser.send(['add_player',[p6]])
-    ser.run()
+    p3.armor = arm3
+    p4.armor = arm4
+    p5.armor = arm5
+    fb = Fireball([100,200],[10, 10], [10,10,10])
+    #ser.send(['add_env',[fb]])
+    qu.put(['add_player',[p1],p1])
+    #qu.put(['add_player',[p2],p2])
+    qu.put(['add_player',[p3],p3])
+    qu.put(['add_player',[p4],p4])
+    #qu.put(['add_player',[p5],p5])
+    #qu.put(['add_player',[p6],p6])
+    #ser.send(['add_player',[p3]])
+    #ser.send(['add_player',[p4],p1])
+    #ser.send(['add_player',[p5]])
+    #ser.send(['add_player',[p6],p1])
+
     screen = pg.display.set_mode(ser.field_size)
     background = pg.Surface(ser.field_size)
     background = background.convert()
@@ -35,7 +51,7 @@ def game():
         for event in pg.event.get():
                 if event.type == pg.QUIT:
                     work = False
-                    ser.stop()
+                    qu.put(['exit'])
                 elif event.type == pg.KEYDOWN:
                     if event.key in (pg.K_UP, pg.K_w):
                         moving_direc[1] = -1
@@ -61,27 +77,25 @@ def game():
                     
                     print('mouse')
                     if state[1][0] == 1:
-                        p1.throw_fireball([-10,-10,0], [state[0][0] - p1.coord[0],state[0][1] - p1.coord[1]])
-        if moving_direc == [0,0]:
+                        p1.throw_fireball([100,100,100], [state[0][0] - p1.coord[0],state[0][1] - p1.coord[1]])
+        #if moving_direc == [0,0]:
             
-            print(moving_direc)
-            print(prev_state)
-            if prev_state[:] != moving_direc[:]:
-                     p1.stop()
-                     print('stop')
-        else:
-            p1.move_to(moving_direc)
-            print(moving_direc)
-            print(str(prev_state)+'prs')
+        #    print(moving_direc)
+        #    print(prev_state)
+        #    if prev_state[:] != moving_direc[:]:
+        #             p1.stop()
+        #             print('stop')
+        #else:
+        p1.move_to(moving_direc)
         prev_state = moving_direc
         background.fill((250,250,250))
-        #print(p1.magic)
+        #print(p1.magic,p2.magic)
         screen.blit(background,(0,0))
-        for item in ser.items:
-            #print(item.coord[0], item.coord[1])
-            pg.draw.circle(screen, (100,100,100),(round(item.coord[0]), round(item.coord[1])), round(item.radius))
+        things = ser.items[:]
+        for item in things:
+            pg.draw.circle(screen, (10,10,10),(round(item.coord[0]), round(item.coord[1])), round(item.radius))
         pg.display.flip()
-
+    ser.join()
     pg.quit()
 
 if __name__ == "__main__":
