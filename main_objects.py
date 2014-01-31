@@ -1,6 +1,6 @@
 import math
 from pymunk.vec2d import Vec2d as vec
-from ok import *
+from phys import *
 
 class Game_obj:
     def __init__(self, coord=[100,100], vel=[0,0], magic=[1,1,1]):
@@ -14,9 +14,9 @@ class Game_obj:
     
     def collide_with(self, other):
          if isinstance(other, Fireball): 
-            self.owner.qmes.put(['remove',[other],self])
+            self.owner.qmes.put(['remove_item',other])
             return
-         vec_btw = vec(-self.coord[0] + other.coord[0], -self.coord[1] + other.coord[1])
+         vec_btw = vec(other.coord[0] - self.coord[0], other.coord[1] - self.coord[1])
          direct_vec=vec_btw.normalized()
          dist = vec_btw.length
          overlay = self.radius + other.radius - dist
@@ -27,12 +27,9 @@ class Game_obj:
          if  math.pi/2 < v2_direc.angle < 3/4 * math.pi: 
                 v2_direc.x = -v2_direc.x
                 v2_direc.rotate(direct_vec.angle)
-                self.owner.qmes.put(['set_vel', [v2_direc, other], self])
+                self.owner.qmes.put(['set_vel', v2_direc.x, v2_direc.y, other])
          dcoor = (lambda x:  x+1 if x < 2   else  x**2)(overlay)
-         add_coor = [dcoor * direct_vec.x, dcoor * direct_vec.y]
-         #other.coord[0] -= direct_vec.x * (1+(lambda x:  x if x < 2   else  x**2)( overlay))
-         #other.coord[1] -= direct_vec.y * (1+(lambda x:  x if x < 2   else  x**2)( overlay))
-         self.owner.qmes.put(['add_coord',[add_coor, other],self])
+         self.owner.qmes.put(['add_coord', dcoor * direct_vec.x, dcoor * direct_vec.y, other])
 
     def interact_with(self, other):    
         pass
@@ -47,26 +44,28 @@ class Player(Game_obj):
                 
 
     def throw_fireball(self, magic, direction ):
-        if self.owner:
-            self.owner.qmes.put(['throw_fireball',[magic, direction],self])
+        direc = vec(direction[0], direction[1]).normalized()
+        x = self.coord[0] + direc.x * (self.radius + 30) 
+        y = self.coord[1] + direc.y * (self.radius + 30)             
+        fireball = Fireball([x,y],[self.strength * direc.x + self.vel.x, self.strength * direc.y + self.vel.y], magic)                    
+        self.owner.qmes.put(['add_item',fireball])
     
     def move_to(self, direction):
+        direction = vec(direction[0], direction[1]).normalized()
+        speed = self.strength * 1.5
         if self.owner:
-            self.owner.qmes.put(['move_to',[direction],self])
+            self.owner.qmes.put(['set_vel', speed*direction.x, speed*direction.y, self])
     def collide_with(self,other):
         if isinstance(other, Fireball): 
-            self.owner.qmes.put(['remove',[other],self])
+            self.owner.qmes.put(['remove_item',other])
         else:
             super().collide_with(other)   
 
     def interact_with(self,other):
         if isinstance(other, Fireball):
             direction = vec(other.coord[0] - self.coord[0], other.coord[1] - self.coord[1])
-            self.owner.qmes.put(['add_force', [sum(a * b for a,b in zip(self.magic, self.armor.make_action(other.magic)))*\
-                                                                    direction.normalized()/direction.length, other],self])
-    def stop(self):
-        if self.owner:
-            self.owner.qmes.put(['stop',self])
+            force = direction.normalized() *sum(a * b for a,b in zip(self.magic, self.armor.make_action(other.magic))) / direction.length
+            self.owner.qmes.put(['add_force', force.x, force.y, other])
 
 class Fireball(Game_obj):
     def __init__(self, coord=[100, 100] , vel=[0,0], magic=[ 1, 1, 1]):
@@ -74,16 +73,15 @@ class Fireball(Game_obj):
         self.radius = 5
     def collide_with(self, other):
         if isinstance(other, Fireball):
-            self.owner.qmes.put(['remove',[other], self])
+            self.owner.qmes.put(['remove_item', other])
         elif isinstance(other, Player):
             mag = other.armor.make_impact(self.magic)
-            self.owner.qmes.put(['hit',[mag, other],self])
+            self.owner.qmes.put(['hit_item', mag[0], mag[1], mag[2], other])
     def interact_with(self, other):
         if isinstance(other, Fireball):
             direction = vec(other.coord[0] - self.coord[0], other.coord[1] - self.coord[1])
             force=direction.normalized() * sum(x[0] * x[1] for x in zip(self.magic, other.magic)) / direction.length
-            print(force)
-            self.owner.qmes.put(['add_force',[force, other],self])
+            self.owner.qmes.put(['add_force', force.x, force.y, other])
 class Armor:
     def __init__(self, player = None, action=[0,0,0], impact=[0,0,0]):
         self.action = action
