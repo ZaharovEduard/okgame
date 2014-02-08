@@ -78,7 +78,10 @@ class Server(threading.Thread):
             direction = [ float(message[5]), float(message[6]) ]
             player.throw_fireball(magic, direction)
 
-        
+        elif message[0] == 'pick_up':
+            #message = ['pick_up', name]
+            player.pick_up()
+
         elif message[0] == 'leave_game':
             #message = ['leave_game', 'name']         
             self.gameque.put(['remove_item', player])

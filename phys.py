@@ -22,6 +22,7 @@ class Physics_server(threading.Thread):
         self.spawner = Spawner(coord=(size[0]//2, size[0]//2))
         self.spawner.owner = self
         self.items = [self.spawner]
+        self.pickable_items = set([])
         self.field_size = size
         self.owner = owner
         self.running = False
@@ -100,8 +101,14 @@ class Physics_server(threading.Thread):
                     if rem in self.items:
                         if isinstance(rem, Player):
                             self.items.remove(rem)
+                            if rem.inventory:
+                                self.qmes.put(['add_item',Bag(things=rem.inventory, coord=rem.coord)])
+                                rem.inventory = []
                             self.spawner.spawn(rem)
                         else:
+                            if rem.pickable:
+                                self.pickable_items.discard(rem)  
+                                print('remove bag')                      
                             self.items.remove(rem)
 
                 items_str = []
@@ -127,7 +134,9 @@ class Physics_server(threading.Thread):
             for other in self.items:
                 if self.distance(item, other) < COLLISION_DIST:              
                     canadd = False                
-            if canadd:            
+            if canadd:     
+                if item.pickable:
+                    self.pickable_items.add(item)     
                 self.items.append(item)
                 item.owner = self            
         
@@ -135,6 +144,8 @@ class Physics_server(threading.Thread):
             #mesage = ['force_add_item',item]
             item = message[1]
             self.items.append(item)
+            if item.pickable:
+                self.pickable_items.add(item)
             item.owner = self
 
         elif message[0] == 'remove_item':
@@ -142,7 +153,8 @@ class Physics_server(threading.Thread):
             item=message[1]
             if item in self.items:                    
                 self.items.remove(item)
-
+                if item.pickable:
+                    self.pickable_items.discard(item)
         elif message[0] == 'hit_item':
             #message = ['hit', magic1, magic2, magic3, item]
             [mag1, mag2, mag3, item] = message[1:]

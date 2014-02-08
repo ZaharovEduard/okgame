@@ -21,7 +21,8 @@ class Game_obj:
         self.force = vec(0,0)
 
         self.life_space = ([float("-Inf"), float("Inf")], [float("-Inf"), float("Inf")], [float("-Inf"), float("Inf")])
-    
+        self.pickable = False
+
     def collide_with(self, other):
          if isinstance(other, Fireball): 
             self.owner.qmes.put(['remove_item',other])
@@ -44,6 +45,8 @@ class Game_obj:
 
     def interact_with(self, other):    
         pass
+
+
 class Spawner(Game_obj):
     def __init__(self, coord):
         super(Spawner, self).__init__(coord)
@@ -67,7 +70,17 @@ class Player(Game_obj):
         self.inertia = 150       
         self.life_space = ([1,200], [1,200], [1,200])
         self.armor = Armor()
+        self.inventory = []
+        self.action_radius = 10
                 
+    def pick_up(self):
+        rem_pickab = set([])
+        for item in self.owner.pickable_items:
+            if math.sqrt((self.coord[0] - item.coord[0])**2 + (self.coord[1] - item.coord[1])**2) < self.action_radius + self.radius + item.radius:
+                    self.inventory += item.things
+                    rem_pickab.add(item)
+        for rem in rem_pickab:
+            self.owner.qmes.put(['remove_item', rem])
 
     def throw_fireball(self, magic, direction ):
         direc = vec(direction[0], direction[1]).normalized()
@@ -84,7 +97,7 @@ class Player(Game_obj):
     def collide_with(self,other):
         if isinstance(other, Fireball): 
             self.owner.qmes.put(['remove_item',other])
-        elif isinstance(other,Spawner):
+        elif isinstance(other,(Spawner,Bag)):
             pass
         else:
             super(Player,self).collide_with(other)   
@@ -107,6 +120,9 @@ class Fireball(Game_obj):
         elif isinstance(other, Player):
             mag = other.armor.make_impact(self.magic)
             self.owner.qmes.put(['hit_item', mag[0], mag[1], mag[2], other])
+        elif isinstance(other, Bag):
+            self.owner.qmes.put(['hit_item', self.magic[0], self.magic[1], self.magic[2], other])
+
     def interact_with(self, other):
         if isinstance(other, Fireball):
             direction = vec(other.coord[0] - self.coord[0], other.coord[1] - self.coord[1])
@@ -119,7 +135,7 @@ class Armor:
         else:
             self.action = action
         if impact == None:
-            self.action = [0,0,0]
+            self.impact = [0,0,0]
         else:
             self.impact = impact
 
@@ -129,4 +145,15 @@ class Armor:
     def make_action(self, magic):
         #return sum([200/frc * mg for frc, mg in zip(self.action ,magic)])
         return [(1+abs(act)/100)*(lambda x: -1 if x<0 else 1)(act) * mag for act, mag in zip(self.action, magic)]
-      
+ 
+class Bag(Game_obj):
+    def __init__(self, coord = None, things = None):
+        super(Bag, self).__init__(coord=coord, magic=[10,10,10])
+        if things == None:
+            self.things = []
+        else:
+            self.things = things
+        self.life_space = ([1,20],[1,20],[1,20])
+        self.radius = 10
+        self.inertia = 400
+        self.pickable = True

@@ -118,6 +118,8 @@ def game(serv_addr, serv_port, name, password):
                     work = False
                     break
                 elif event.type == pg.KEYDOWN:
+                    if event.key == pg.K_p:
+                        sock.send(form_mess(['pick_up', name]))
                     if event.key in (pg.K_UP, pg.K_w):
                         moving_direc[1] = -1
                     if event.key in (pg.K_DOWN, pg.K_s):
