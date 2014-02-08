@@ -16,10 +16,12 @@ MIN_MAGIC = 1
 
 class Physics_server(threading.Thread):
 
-    def __init__(self, qmes, owner, size=(800,600), step=0.01):
+    def __init__(self, qmes, owner, size=(1000,1000), step=0.01):
         super(Physics_server, self).__init__()
         self.step = step
-        self.items = []
+        self.spawner = Spawner(coord=(size[0]//2, size[0]//2))
+        self.spawner.owner = self
+        self.items = [self.spawner]
         self.field_size = size
         self.owner = owner
         self.running = False
@@ -96,35 +98,28 @@ class Physics_server(threading.Thread):
                 
                 for rem in rem_items:
                     if rem in self.items:
-                        self.items.remove(rem)
+                        if isinstance(rem, Player):
+                            self.items.remove(rem)
+                            self.spawner.spawn(rem)
+                        else:
+                            self.items.remove(rem)
 
                 items_str = []
                 for item in self.items:
                     items_str += [ str(round(item.coord[0])), str(round(item.coord[1])), str(round(item.radius))]
                 self.owner.gameitems = items_str
 
-                time_passed = time.time() - start_time    
-                #print(time_passed)
+                time_passed = time.time() - start_time
                 if time_passed < self.step:
                     time.sleep( self.step - time_passed)
 #-------------------------------------------
-            #print('game work stopped')
     
     def distance(self, A, B):
         return math.sqrt((A.coord[0] - B.coord[0])**2 + (A.coord[1] - B.coord[1])**2) - A.radius - B.radius
     
     def proceed_mess(self, message):
-        '''message = ['action_name',args]
-        
-        if message[0] == 'add_player':
-            # message = ['add_player', player]
-            player = message[1]
-            if isinstance(player, Player):
-                self.items.append(player)
-                player.owner = self
-        '''
-        
-        #print(message)
+        '''message = ['action_name',args]'''
+
         if message[0] == 'add_item':
             # message = ['add_item', item]
             item = message[1]
@@ -135,6 +130,12 @@ class Physics_server(threading.Thread):
             if canadd:            
                 self.items.append(item)
                 item.owner = self            
+        
+        elif message[0] == 'force_add_item':
+            #mesage = ['force_add_item',item]
+            item = message[1]
+            self.items.append(item)
+            item.owner = self
 
         elif message[0] == 'remove_item':
             #message = ['remove_item',item]
@@ -182,6 +183,13 @@ class Physics_server(threading.Thread):
             [x,y, item] = message[1:]
             if item in self.items:
                 item.coord = coor
+
+        elif message[0] == 'set_magic':
+            #message = ['set_magic', m1, m2, m3, item]
+            mag = [message[1],message[2],message[3]]
+            item = message[4]            
+            if item in self.items:
+                item.magic = mag
         #elif message[0] == 'get_items':
             #message = ['get_items']
         #    items_shell = [(it.coord, it.radius) for it in self.items]
@@ -192,8 +200,8 @@ class Physics_server(threading.Thread):
         return "Server with "+str(len(self.items))+ " items"       
 
 class Cust_Physics_server(Physics_server):
-    def __init__(self, qmes, owner, size=(800,600), step=0.01):
-        super(Cust_Physics_server, self).__init__(qmes, owner, size=(800,600), step=0.01)
+    def __init__(self, qmes, owner, size=(3000,3000), step=0.01):
+        super(Cust_Physics_server, self).__init__(qmes, owner, size=(3000,3000), step=0.01)
                 
         self.items = [Player([300,400],[0, 0], [100,100,100]),
     Player([400,300],[10,0], [100,100,100]),

@@ -10,8 +10,7 @@ BYTES_IN_HEADER = 8 # b'00000000' -> 41 bytes
 
 def send_message_to(messenger, name, message):
     message = ' '.join(message)
-    message = message.encode('utf-8')  
-
+    message = message.encode('utf-8')
     mess_size = len(message)
     str_size = str(mess_size).encode('utf-8')
     len_head = len(str_size)
@@ -80,28 +79,26 @@ class Connection(threading.Thread):
                 except:
                     print('unexpected message')
                     break
-                if len(rcvd_data) > 2:
+                if len(rcvd_data) > 1:
                     if  not self.client_name:
-                        #print('setting name')
-                        self.client_name = rcvd_data[0]
-                        #print(self.client_name)
-                        self.owner.named_connects[self.client_name] = self
-                    self.owner.out_queue.put(rcvd_data)
-                    #print(self.client_name)  
+                        if not rcvd_data[1] in self.owner.named_connects:
+                            self.client_name = rcvd_data[1]
+                            self.owner.named_connects[self.client_name] = self
+                            self.owner.out_queue.put(rcvd_data)
+                        else:
+                            break
+                    else:
+                        self.owner.out_queue.put(rcvd_data)
                 else:
                     continue
             else:
                 print('connection closed because of timeout')
                 self.runn = False
                 break
-            #print('data received')
         if self in self.owner.connections:
             self.owner.connections.remove(self)
             self.connection.close() 
             print('connection removed from list of connections')
         if self.client_name:    
-            #self.owner.out_queue.put(['leave_game', self.client_name])
             if self.client_name in self.owner.named_connects:
                 del self.owner.named_connects[self.client_name]
-                #print('connection removed from connections dict')
-        print('end')   

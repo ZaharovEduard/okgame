@@ -12,6 +12,7 @@ class Server(threading.Thread):
         super(Server, self).__init__()
         self.game = None
         self.all_players = {}
+        self.logged_players = {}
         self.gameitems =[]
         
         self.mess_queue = queue.Queue()
@@ -34,69 +35,54 @@ class Server(threading.Thread):
             while not self.mess_queue.empty():
                 r_msg = self.mess_queue.get() 
                 self.proceed_mess(r_msg)
-        #print('server work stopped')
-                
         
     def proceed_mess(self, message):
-        #print('proceed_mess')
-        # message = ['name', 'password', 'comand', 'arguments']
-        if message[2] == 'register':
-            #print('register')
-            # ['name', 'password', 'register']
-            name, password = message[0], message[1]
-            if not name in self.all_players:
-                self.all_players[name] = [password, False , Player(coord = (random.randrange(200),random.randrange(100)))] #repair here
-            #else:
-                #print('Player name is already taken')
-        else:
-             player_instance = self.check_login( message[0], message[1])  
-             if player_instance:
-                self.exec_mess(player_instance, message[2:])
-    
-    def check_login(self, name, password): 
-        if name in self.all_players:
-            player = self.all_players[name]
-            if player[0] == password:
-                return name, player
-            else:
-                return False
-        else:
-            return False
-
-
-    def exec_mess(self, name_and_player, message):
-        name, [_, _,player] = name_and_player
-        #print(player, message)
+        # message = ['comand', 'name', 'arguments']
         if message[0] == 'join_game':
-            #message = ['join_game']
-            self.all_players[name][1] = True                                    
-            self.gameque.put(['add_item', player])  
-      
-        elif message[0] == 'leave_game':
-            #message = ['leave_game']
-            self.all_players[name][1] = False            
-            self.gameque.put(['remove_item', player]) 
-      
-        
-        elif message[0] == 'alive':
-            #message = ['alive']
+            name, password = message[1], message[2]       
+            if name in self.all_players:
+                if password == self.all_players[name][0]:
+                    self.logged_players[name] = self.all_players[name][1]
+                    self.game.spawner.spawn(self.logged_players[name])
+                    game_info = [str(self.game.field_size[0]), str(self.game.field_size[1])]
+                    send_message_to(self.messenger, name, game_info)
+            else:
+                self.all_players[name] = [password, Player()]
+                self.logged_players[name] = self.all_players[name][1]
+                self.game.spawner.spawn(self.logged_players[name])
+                game_info = [str(self.game.field_size[0]), str(self.game.field_size[1])]
+                send_message_to(self.messenger, name, game_info)
+        else:
+            if message[1] in self.logged_players:
+                self.exec_mess(self.logged_players[message[1]], message)
+            else:
+                send_message_to(self.messenger, message[1], ['not_logged'])
+
+
+    def exec_mess(self, player, message):
+        if message[0] == 'alive':
+            #message = ['alive', 'name']
             [x,y] = player.coord
             [m1, m2, m3] = player.magic
-            player_info = [str(x),str(y),str(m1),str(m2),str(m3)]
-            send_message_to(self.messenger, name, player_info + self.gameitems)
+            player_info = [str(round(x)),str(round(y)),str(m1),str(m2),str(m3)]
+            send_message_to(self.messenger, message[1], player_info + self.gameitems)
 
         elif message[0] == 'move_to':
-            #message = ['move_to', 'x', 'y']
-            direction = [float(message[1]), float(message[2])]
+            #message = ['move_to', 'name', 'x', 'y']
+            direction = [float(message[2]), float(message[3])]
             player.move_to( direction )
 
         elif message[0] =='throw_fireball':
-            #message = ['throw_fireball', 'mag1', 'mag2' mag3', 'x', 'y']
-            magic = [ int(message[1]), int(message[2]), int(message[3])]
-            direction = [ float(message[4]), float(message[5]) ]
+            #message = ['throw_fireball', 'name', 'mag1', 'mag2' mag3', 'x', 'y']
+            magic = [ int(message[2]), int(message[3]), int(message[4])]
+            direction = [ float(message[5]), float(message[6]) ]
             player.throw_fireball(magic, direction)
 
-        elif message[0] == 'to_game':
-            #['to_game, [to game message]]
-            #self.gameque.put(message+[player])
-            print(message)
+        
+        elif message[0] == 'leave_game':
+            #message = ['leave_game', 'name']         
+            self.gameque.put(['remove_item', player])
+            del self.logged_players[message[1]]
+      
+        else:
+            pass
