@@ -64,23 +64,52 @@ class Server(threading.Thread):
             #message = ['alive', 'name']
             [x,y] = player.coord
             [m1, m2, m3] = player.magic
-            player_info = [str(round(x)),str(round(y)),str(m1),str(m2),str(m3)]
-            send_message_to(self.messenger, message[1], player_info + self.gameitems)
+            invent = []
+            for item in player.inventory:
+                if item.obj_type == 'armor':
+                    invent += ['armor'] + [str(round(x)) for x in item.action] + [str(round(x)) for x in item.impact]
+                else:
+                    invent += [item.obj_type] + [str(round(x)) for x in item.magic]
+            player_info = [str(round(x)),str(round(y)),str(round(m1)),str(round(m2)),str(round(m3))] + invent
+            send_message_to(self.messenger, message[1], player_info)
+            send_message_to(self.messenger, message[1], self.gameitems)
 
         elif message[0] == 'move_to':
             #message = ['move_to', 'name', 'x', 'y']
-            direction = [float(message[2]), float(message[3])]
+            try:
+                direction = [float(message[2]), float(message[3])]
+            except:
+                return
             player.move_to( direction )
 
         elif message[0] =='throw_fireball':
             #message = ['throw_fireball', 'name', 'mag1', 'mag2' mag3', 'x', 'y']
-            magic = [ int(message[2]), int(message[3]), int(message[4])]
-            direction = [ float(message[5]), float(message[6]) ]
+            try:
+                magic = [ int(message[2]), int(message[3]), int(message[4])]
+                direction = [ float(message[5]), float(message[6]) ]
+            except:
+                return            
             player.throw_fireball(magic, direction)
 
         elif message[0] == 'pick_up':
-            #message = ['pick_up', name]
+            #message = ['pick_up', 'name']
             player.pick_up()
+    
+        elif message[0] == 'drop_item':
+            #message = ['drop_items', 'name', index']
+            try:            
+                index = int(message[2])
+            except:
+                return
+            player.drop_item(index)
+        
+        elif message[0] == 'put_on':
+            #message = ['put_on', 'name', 'index']
+            try: 
+                num = int(message[2]) 
+            except:
+                return
+            player.put_on(num)
 
         elif message[0] == 'leave_game':
             #message = ['leave_game', 'name']         
@@ -88,4 +117,4 @@ class Server(threading.Thread):
             del self.logged_players[message[1]]
       
         else:
-            pass
+            return

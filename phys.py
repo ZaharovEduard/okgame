@@ -12,7 +12,6 @@ from queue import Full, Empty
 FIREBALL_GAP = 20
 INTERACTION_DIST = 200
 COLLISION_DIST = 0.1
-MIN_MAGIC = 1
 
 class Physics_server(threading.Thread):
 
@@ -49,8 +48,7 @@ class Physics_server(threading.Thread):
                     ls = item.life_space
                     mg = item.magic                    
                      
-                    if not    (ls[0][0] < mg[0] < ls[0][1] and ls[1][0] < mg[1] <ls[1][1] and ls[2][0] < mg[2] < ls[2][1]) \
-                                or (reduce(lambda x,y: x*y, [abs(check) < MIN_MAGIC for check in mg])):                        
+                    if not (ls[0][0] < mg[0] < ls[0][1] or ls[1][0] < mg[1] <ls[1][1] or ls[2][0] < mg[2] < ls[2][1]):                        
                         rem_items.add(item)                        
                     
                     vx, vy = item.vel.x + item.force.x/item.inertia, item.vel.y + item.force.y/item.inertia
@@ -81,8 +79,7 @@ class Physics_server(threading.Thread):
                             break     
                         otmag = other.magic
                         ls = other.life_space
-                        if not    (ls[0][0] < otmag[0] < ls[0][1] and ls[1][0] < otmag[1] <ls[1][1] and ls[2][0] < otmag[2] < ls[2][1]) \
-                           or (reduce(lambda x,y: x*y, [abs(check) < MIN_MAGIC for check in mg])):                   
+                        if not (ls[0][0] < otmag[0] < ls[0][1] and ls[1][0] < otmag[1] <ls[1][1] and ls[2][0] < otmag[2] < ls[2][1]):                   
                             rem_items.add(other)      
                         else:
                             dist = self.distance(item, other)
@@ -101,19 +98,26 @@ class Physics_server(threading.Thread):
                     if rem in self.items:
                         if isinstance(rem, Player):
                             self.items.remove(rem)
-                            if rem.inventory:
-                                self.qmes.put(['add_item',Bag(things=rem.inventory, coord=rem.coord)])
-                                rem.inventory = []
+                            #bag = Bag(things=rem.inventory[:] + [Armor(action=init_magic, impact=[0,0,0])], coord=rem.coord)
+                            for drop_item in rem.inventory:
+                                x,y = random.random()* 2 -1, random.random()* 2 -1
+                                drop_item.coord[0] = rem.coord[0] + x*10
+                                drop_item.coord[1] = rem.coord[1] + y*10
+                                self.qmes.put(['force_add_item', drop_item ])   
+                            init_magic = [(lambda x: x if abs(x) < 100 else 0)(mag) for mag in rem.magic] 
+                            print(init_magic)
+                            new_arm = Armor(action=init_magic, impact=[10,20,-10], coord=rem.coord)                        
+                            self.qmes.put(['force_add_item',new_arm])
+                            rem.inventory = []
                             self.spawner.spawn(rem)
                         else:
                             if rem.pickable:
                                 self.pickable_items.discard(rem)  
-                                print('remove bag')                      
                             self.items.remove(rem)
 
                 items_str = []
                 for item in self.items:
-                    items_str += [ str(round(item.coord[0])), str(round(item.coord[1])), str(round(item.radius))]
+                    items_str += [item.obj_type, str(round(item.coord[0])), str(round(item.coord[1])), str(round(item.radius))]
                 self.owner.gameitems = items_str
 
                 time_passed = time.time() - start_time
