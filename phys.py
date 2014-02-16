@@ -105,7 +105,6 @@ class Physics_server(threading.Thread):
                                 drop_item.coord[1] = rem.coord[1] + y*10
                                 self.qmes.put(['force_add_item', drop_item ])   
                             init_magic = [(lambda x: x if abs(x) < 100 else 0)(mag) for mag in rem.magic] 
-                            print(init_magic)
                             new_arm = Armor(action=init_magic, impact=[10,20,-10], coord=rem.coord)                        
                             self.qmes.put(['force_add_item',new_arm])
                             rem.inventory = []

@@ -122,7 +122,7 @@ class Player(Game_obj):
     def interact_with(self,other):
         if isinstance(other, Fireball):
             direction = vec(other.coord[0] - self.coord[0], other.coord[1] - self.coord[1])
-            force = direction.normalized() * sum(10*a * b for a,b in zip(self.magic, self.armor.make_action(other.magic))) / direction.length
+            force = direction.normalized() * sum(a * b for a,b in zip(self.magic, self.armor.make_action(other.magic))) / direction.length
             self.owner.qmes.put(['add_force', force.x, force.y, other])
 
 class Fireball(Game_obj):
@@ -130,7 +130,7 @@ class Fireball(Game_obj):
         super(Fireball, self).__init__(coord, vel, magic)
         self.radius = 5
         sq_sum_magic = math.sqrt(sum(x**2 for x in self.magic))
-        self.inertia = sq_sum_magic if sq_sum_magic > 10 else 10 
+        self.inertia = 5 #sq_sum_magic if sq_sum_magic > 10 else 10 
         self.obj_type = 'fireball'        
 
     def collide_with(self, other):
