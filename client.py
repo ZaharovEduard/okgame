@@ -21,8 +21,22 @@ def receive_data(sock):
     else:
         return False
 
-def unpack_player_info(player_data):
-    data = player_data.split()
+def extract_info(in_data):
+    data = in_data.split()
+    pl_inf , items_inf= [], []
+    limiter = False
+    for word in data:
+        if word == 'lim':
+            limiter = True
+            continue
+        if limiter:
+            items_inf.append(word)
+        else:
+            pl_inf.append(word)
+    return (pl_inf, items_inf)
+
+def unpack_player_info(data):
+    #data = player_data.split()
     #[str(round(x)),str(round(y)),str(m1),str(m2),str(m3)] + inventory
     x,y = int(data[0]), int(data[1])
     magic = [int(data[2]), int(data[3]), int(data[4])]
@@ -37,8 +51,8 @@ def unpack_player_info(player_data):
             inv = inv[4:]
     return ((x,y),magic, inventory)
 
-def unpack_game_items_info(items_info):
-    items_raw = items_info.split()
+def unpack_game_items_info(items_raw):
+    #items_raw = items_info.split()
     game_items = [items_raw[i:i+4] for i in range(0,len(items_raw),4)]
     for item in game_items:
         item[1], item[2], item[3] = int(item[1]), int(item[2]), int(item[3]) #??? dumb
@@ -93,15 +107,11 @@ def game(serv_addr, serv_port, name, password):
     work = True 
     while work:
         start_time = time.time()
-        sock.send(form_mess(['alive', name]))
-        player_data = receive_data(sock)
-        if not player_data:
+        recv_data = receive_data(sock)
+        if not recv_data:
             break
-        pl_inf = unpack_player_info(player_data) 
-        game_items_data = receive_data(sock)
-        if not game_items_data:
-            break
-        game_items = unpack_game_items_info(game_items_data)
+        pl_raw, game_raw = extract_info(recv_data) 
+        pl_inf, game_items = unpack_player_info(pl_raw), unpack_game_items_info(game_raw)    
         messages = hud.refresh(game_items, pl_inf) 
         if messages == False:
             break
@@ -112,6 +122,6 @@ def game(serv_addr, serv_port, name, password):
         dt = end_time - start_time
         if dt < 1 / REF_RATE:
             time.sleep(1/REF_RATE - dt)
-    sock.send(form_mess(['leave_game',name]))
+    sock.send(form_mess(['leave_game']))
     sock.close()
     hud.stop()

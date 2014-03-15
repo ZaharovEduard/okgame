@@ -5,7 +5,7 @@ import threading
 import select
 
 REFRESH_TIME = 1
-TIMEOUT = 20
+TIMEOUT = 2000
 BYTES_IN_HEADER = 8 # b'00000000' -> 41 bytes
 
 def send_message_to(messenger, name, message):
@@ -79,18 +79,19 @@ class Connection(threading.Thread):
                 except:
                     print('unexpected message')
                     break
-                if len(rcvd_data) > 1:
+                print(rcvd_data)
+                if rcvd_data[0] == 'join_game':
                     if  not self.client_name:
                         if not rcvd_data[1] in self.owner.named_connects:
                             self.client_name = rcvd_data[1]
                             self.owner.named_connects[self.client_name] = self
                             self.owner.out_queue.put(rcvd_data)
+                            print('21')
                         else:
                             break
-                    else:
-                        self.owner.out_queue.put(rcvd_data)
-                else:
-                    continue
+                else:   
+                    if self.client_name:
+                        self.owner.out_queue.put([self.client_name] + rcvd_data)
             else:
                 print('connection closed because of timeout')
                 self.runn = False
