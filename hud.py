@@ -35,7 +35,6 @@ class Hud:
     def refresh(self, game_items, player_info):
         (pl_coord, pl_magic, pl_inventory) = player_info
         x_assert, y_assert = self.count_assertion(pl_coord)
-        print(x_assert,y_assert)
         self.scr.blit(self.pics['background'],(-x_assert, -y_assert))
         px = self.pics
         for item in game_items:
@@ -57,9 +56,9 @@ class Hud:
                     return False
                 elif event.type == pg.KEYDOWN:
                     if event.key == pg.K_o:
-                        out.append(['drop_item', self.pl_name, '0'])
+                        out.append(['drop_item', '0'])
                     if event.key == pg.K_p:
-                        out.append(['pick_up', self.pl_name])
+                        out.append(['pick_up'])
                     if event.key in (pg.K_UP, pg.K_w):
                         self.moving_direc[1] = -1
                     if event.key in (pg.K_DOWN, pg.K_s):
@@ -87,28 +86,26 @@ class Hud:
                         if invp_x + 5 < x < invp_x + invp_width: 
                             inv_index = (x - invp_x - 5) // self.pics['armor_icon'].get_size()[1]
                             if but1:
-                                out.append(['put_on', self.pl_name, inv_index])
+                                out.append(['put_on', inv_index])
                             elif but3:
-                                out.append(['drop_item', self.pl_name, inv_index])
+                                out.append(['drop_item', inv_index])
                     if lp_x < x < lp_x + lp_width and lp_y < y < lp_y + lp_height:
                         if but1:
                             row = (y - lp_y) // (lp_height // 3)
                             power = round((x - lp_x - lp_width // 2) / (lp_width // 2) * 100)
-                            print(power)
-                            self.prev_launch[row] = power 
-                           # round((x - launch_pan_coord[0] - 60) / 58 * 100)
+                            if 0 <= row <= 2:
+                                self.prev_launch[row] = power 
                     else:
                         n_x, n_y = x + x_assert - pl_coord[0], y + y_assert - pl_coord[1]
                         [mag1, mag2, mag3] = self.prev_launch
-                        out.append(['throw_fireball', self.pl_name,  mag1, mag2, mag3, n_x, n_y])
+                        out.append(['throw_fireball',  mag1, mag2, mag3, n_x, n_y])
                         
         if self.moving_direc == [0,0]:        
             if self.prev_mov_dir != self.moving_direc:        
-                out.append(['move_to', self.pl_name, self.moving_direc[0], self.moving_direc[1]])
+                out.append(['move_to', self.moving_direc[0], self.moving_direc[1]])
         else:
-            out.append(['move_to', self.pl_name, self.moving_direc[0], self.moving_direc[1]])
+            out.append(['move_to', self.moving_direc[0], self.moving_direc[1]])
         self.prev_mov_dir = self.moving_direc[:]    
-        print(out)
         return out
 
     def count_assertion(self, pl_coord):

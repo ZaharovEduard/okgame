@@ -28,7 +28,6 @@ class Messenger(threading.Thread):
         super(Messenger, self).__init__()
 
         self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        #self.socket.setblocking(0)
         self.socket.bind((socket.gethostname(), port))
         self.socket.listen(max_clients)
         
@@ -42,7 +41,6 @@ class Messenger(threading.Thread):
         self.runn = True
         while self.runn:  
             sock, _, _ = select.select([self.socket],[],[],REFRESH_TIME)           
-            #print(new_conn)
             if sock:
                 conn, addr = self.socket.accept()
                 conn_thr = Connection(self, conn) 
@@ -79,14 +77,12 @@ class Connection(threading.Thread):
                 except:
                     print('unexpected message')
                     break
-                print(rcvd_data)
                 if rcvd_data[0] == 'join_game':
                     if  not self.client_name:
                         if not rcvd_data[1] in self.owner.named_connects:
                             self.client_name = rcvd_data[1]
                             self.owner.named_connects[self.client_name] = self
                             self.owner.out_queue.put(rcvd_data)
-                            print('21')
                         else:
                             break
                 else:   

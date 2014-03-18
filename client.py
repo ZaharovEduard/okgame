@@ -3,7 +3,8 @@ import socket
 import select
 import time
 import pygame as pg
-from hud import *
+import hud
+
 REF_RATE = 70
 TIMEOUT = 10
 SIZE = (800,600)
@@ -100,8 +101,8 @@ def game(serv_addr, serv_port, name, password):
         print('not logged')
         sock.close()
         return False
-    hud = Hud(SIZE,field_size,name)
-    if hud.failed:
+    cl_hud = hud.Hud(SIZE,field_size,name)
+    if cl_hud.failed:
         print('hud init failed')
         return False
     work = True 
@@ -112,7 +113,7 @@ def game(serv_addr, serv_port, name, password):
             break
         pl_raw, game_raw = extract_info(recv_data) 
         pl_inf, game_items = unpack_player_info(pl_raw), unpack_game_items_info(game_raw)    
-        messages = hud.refresh(game_items, pl_inf) 
+        messages = cl_hud.refresh(game_items, pl_inf) 
         if messages == False:
             break
         for mess in messages:
@@ -124,4 +125,4 @@ def game(serv_addr, serv_port, name, password):
             time.sleep(1/REF_RATE - dt)
     sock.send(form_mess(['leave_game']))
     sock.close()
-    hud.stop()
+    cl_hud.stop()

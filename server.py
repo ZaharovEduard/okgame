@@ -2,10 +2,10 @@ import threading
 import time
 import math
 from pymunk.vec2d import Vec2d as vec
-#from main_objects import *
-from phys import *
-from net import *
 import queue
+import phys
+import net
+import main_objects
 
 REFRESH_TIME = 0.02
 class Server(threading.Thread):
@@ -17,14 +17,14 @@ class Server(threading.Thread):
         self.gameitems =[]
         
         self.mess_queue = queue.Queue()
-        self.messenger = Messenger(self.mess_queue, port, max_users)
+        self.messenger = net.Messenger(self.mess_queue, port, max_users)
         #all_players = { name: [password, bool-Online?, player]}
         self.gameque = queue.Queue()
 
     def run(self):        
         #print('server work started')
         self.running = True
-        self.game = Physics_server(qmes=self.gameque, owner=self)     
+        self.game = phys.Physics_server(qmes=self.gameque, owner=self)     
         self.game.start()        
         self.messenger.start()
         self.work()
@@ -49,7 +49,7 @@ class Server(threading.Thread):
                     else:
                         invent += [item.obj_type] + [sr(x) for x in item.magic]
                 player_info = [sr(item) for item in (x,y,m1,m2,m3)] + invent
-                send_message_to(self.messenger, player_name, player_info +['lim'] +self.gameitems)
+                net.send_message_to(self.messenger, player_name, player_info +['lim'] +self.gameitems)
             passed_time = time.time() - start_time
             if passed_time < REFRESH_TIME:
                 time.sleep(REFRESH_TIME - passed_time)
@@ -62,37 +62,21 @@ class Server(threading.Thread):
                     self.logged_players[name] = self.all_players[name][1]
                     self.game.spawner.spawn(self.logged_players[name])
                     game_info = [str(self.game.field_size[0]), str(self.game.field_size[1])]
-                    send_message_to(self.messenger, name, game_info)
+                    net.send_message_to(self.messenger, name, game_info)
             else:
-                self.all_players[name] = [password, Player()]
+                self.all_players[name] = [password, main_objects.Player()]
                 self.logged_players[name] = self.all_players[name][1]
                 self.game.spawner.spawn(self.logged_players[name])
                 game_info = [str(self.game.field_size[0]), str(self.game.field_size[1])]
-                send_message_to(self.messenger, name, game_info)
+                net.send_message_to(self.messenger, name, game_info)
         else:
             if message[0] in self.logged_players:
                 self.exec_mess(self.logged_players[message[0]], message)
             else:
-                send_message_to(self.messenger, message[0], ['not_logged'])
+                net.send_message_to(self.messenger, message[0], ['not_logged'])
 
 
     def exec_mess(self, player, message):
-        '''if message[1] == 'alive':
-            #message = ['name','alive']
-            [x,y] = player.coord
-            [m1, m2, m3] = player.magic
-            invent = []
-            def sr(x):
-                return str(round(x))
-            for item in player.inventory:
-                if item.obj_type == 'armor':
-                    invent += ['armor'] + [sr(x) for x in item.action] + [sr(x) for x in item.impact]
-                else:
-                    invent += [item.obj_type] + [sr(x) for x in item.magic]
-            player_info = [sr(x),sr(y),sr(m1),sr(m2),sr(m3)] + invent
-            send_message_to(self.messenger, message[0], player_info)
-            send_message_to(self.messenger, message[0], self.gameitems)'''
-
         if message[1] == 'move_to':
             #message = ['name','move_to', 'x', 'y']
             try:

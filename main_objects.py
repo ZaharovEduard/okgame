@@ -1,7 +1,6 @@
 import math
 import random
 from pymunk.vec2d import Vec2d as vec
-from phys import *
 
 class Game_obj:
     def __init__(self, coord=None, vel=None, magic=None):
@@ -29,7 +28,6 @@ class Game_obj:
                 v2_direc.x = -v2_direc.x
                 v2_direc.rotate(direct_vec.angle)
                 self.owner.qmes.put(['set_vel', v2_direc.x, v2_direc.y, other])
-         #dcoor = (lambda x:  x+1 if x < 2   else  x**2)(overlay)
          dcoor = (lambda x:  x+1 if x < 2   else  x+3)(overlay)
          self.owner.qmes.put(['add_coord', dcoor * direct_vec.x, dcoor * direct_vec.y, other])
 
@@ -50,8 +48,6 @@ class Spawner(Game_obj):
         player.coord = [self.coord[0] + x_dir * (self.radius + player.radius + 2), self.coord[1] + y_dir * (self.radius + player.radius + 2)]
         player.magic = [0, 0, 0]
         self.owner.qmes.put(['force_add_item',player])
-        #self.owner.qmes.put(['set_magic', 100, 100, 100, player])
-        #self.owner.qmes.put(['set_coord', self.coord[0] + x_dir * (self.radius + player.radius + 2), self.coord[1] + y_dir * (self.radius + player.radius + 2),player])
 
 class Player(Game_obj):
     def __init__(self, coord = None, vel=None, magic=None):
@@ -130,7 +126,7 @@ class Fireball(Game_obj):
         super(Fireball, self).__init__(coord, vel, magic)
         self.radius = 5
         sq_sum_magic = math.sqrt(sum(x**2 for x in self.magic))
-        self.inertia = 5 #sq_sum_magic if sq_sum_magic > 10 else 10 
+        self.inertia = 5 
         self.obj_type = 'fireball'        
 
     def collide_with(self, other):
@@ -162,7 +158,6 @@ class Armor(Game_obj):
         return [mg * (1-imp/100) for mg,imp in zip(magic, self.impact)]
     
     def make_action(self, magic):
-        #return sum([200/frc * mg for frc, mg in zip(self.action ,magic)])
         return [(1+abs(act)/100)*(lambda x: -1 if x<0 else 1)(act) * mag for act, mag in zip(self.action, magic)]
  
 class Bag(Game_obj):

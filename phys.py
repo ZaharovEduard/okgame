@@ -4,11 +4,10 @@ import random
 import math
 import multiprocessing 
 from pymunk.vec2d import Vec2d as vec
-from functools import reduce
-from main_objects import *
-from server import *
+import main_objects
 import queue
 from queue import Full, Empty
+
 FIREBALL_GAP = 20
 INTERACTION_DIST = 200
 COLLISION_DIST = 0.1
@@ -18,7 +17,7 @@ class Physics_server(threading.Thread):
     def __init__(self, qmes, owner, size=(1000,1000), step=0.01):
         super(Physics_server, self).__init__()
         self.step = step
-        self.spawner = Spawner(coord=(size[0]//2, size[0]//2))
+        self.spawner = main_objects.Spawner(coord=(size[0]//2, size[0]//2))
         self.spawner.owner = self
         self.items = [self.spawner]
         self.pickable_items = set([])
@@ -70,7 +69,7 @@ class Physics_server(threading.Thread):
                         setvel = True
                     
                     item.coord = [x,y]
-                    if isinstance(item, Fireball):
+                    if isinstance(item, main_objects.Fireball):
                         if     self.field_size[0] - item.radius - 1 < x or x < item.radius + 1 \
                             or self.field_size[1] - item.radius - 1 < y or y < item.radius + 1:
                             rem_items.add(item)
@@ -96,16 +95,15 @@ class Physics_server(threading.Thread):
                 
                 for rem in rem_items:
                     if rem in self.items:
-                        if isinstance(rem, Player):
+                        if isinstance(rem, main_objects.Player):
                             self.items.remove(rem)
-                            #bag = Bag(things=rem.inventory[:] + [Armor(action=init_magic, impact=[0,0,0])], coord=rem.coord)
                             for drop_item in rem.inventory:
                                 x,y = random.random()* 2 -1, random.random()* 2 -1
                                 drop_item.coord[0] = rem.coord[0] + x*10
                                 drop_item.coord[1] = rem.coord[1] + y*10
                                 self.qmes.put(['force_add_item', drop_item ])   
-                            init_magic = [(lambda x: x if abs(x) < 100 else 0)(mag) for mag in rem.magic] 
-                            new_arm = Armor(action=init_magic, impact=[10,20,-10], coord=rem.coord)                        
+                            init_magic = [mag if abs(mag) < 100 else 0 for mag in rem.magic] 
+                            new_arm = main_objects.Armor(action=init_magic, impact=[random.randint(0,50) for i in range(0,3)], coord=rem.coord)                        
                             self.qmes.put(['force_add_item',new_arm])
                             rem.inventory = []
                             self.spawner.spawn(rem)
@@ -212,14 +210,4 @@ class Physics_server(threading.Thread):
           
     
     def __str__(self):
-        return "Server with "+str(len(self.items))+ " items"       
-
-class Cust_Physics_server(Physics_server):
-    def __init__(self, qmes, owner, size=(3000,3000), step=0.01):
-        super(Cust_Physics_server, self).__init__(qmes, owner, size=(3000,3000), step=0.01)
-                
-        self.items = [Player([300,400],[0, 0], [100,100,100]),
-    Player([400,300],[10,0], [100,100,100]),
-     Player([30,500],[0,0], [100,100,100]),
-    Player([700,300],[0,0], [100,100,100])]
-
+        return "Server with "+str(len(self.items))+ " items"
