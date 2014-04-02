@@ -14,7 +14,6 @@ class Hud:
             ld = pg.image.load 
             self.pics = {'player': ld(os.path.join('res','player.png')).convert_alpha(),
                          'fireball': ld(os.path.join('res','fireball.png')).convert_alpha(),
-                         'bag': ld(os.path.join('res','bag.png')).convert_alpha(),
                          'spawner': ld(os.path.join('res','spawner.png')).convert_alpha(),
                          'armor': ld(os.path.join('res','armor.png')).convert_alpha(),
                          'panel': ld(os.path.join('res','inventory_panel.png')).convert_alpha(),
