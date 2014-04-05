@@ -21,8 +21,10 @@ def send_message_to(messenger, name, message):
     if name in messenger.named_connects: 
         _, wr, _ = select.select([],[messenger.named_connects[name].connection],[],TIMEOUT)
         if wr:
-            messenger.named_connects[name].connection.send(header+message)
-
+            try:
+                messenger.named_connects[name].connection.send(header+message)
+            except:
+                pass
 class Messenger(threading.Thread):
     def __init__(self, out_queue, port, max_clients):
         super(Messenger, self).__init__()

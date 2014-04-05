@@ -99,12 +99,8 @@ class Server(threading.Thread):
             player.pick_up()
     
         elif message[1] == 'drop_item':
-            #message = ['name' 'drop_item', 'index']
-            try:            
-                index = int(message[2])
-            except:
-                return
-            player.drop_item(index)
+            #message = ['name' 'drop_item']
+            player.drop_item()
         
         elif message[1] == 'put_on':
             #message = ['name','put_on',  'index']

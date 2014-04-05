@@ -22,6 +22,7 @@ class Hud:
                          'big_slider': ld(os.path.join('res','big_slider.png')).convert_alpha(),
                          'small_slider': ld(os.path.join('res','small_slider.png')).convert_alpha(),
                          'launch_panel': ld(os.path.join('res','launch_panel.png')).convert_alpha(),
+                         'arm_slider': ld(os.path.join('res','arm_slider.png')).convert_alpha(),
                          'background': ld(os.path.join('res','background.png')).convert_alpha() }
             self.pics['background'] = self.make_background(self.pics['background'], field_size)          
             self.prev_launch = [0,0,0]
@@ -55,7 +56,7 @@ class Hud:
                     return False
                 elif event.type == pg.KEYDOWN:
                     if event.key == pg.K_o:
-                        out.append(['drop_item', '0'])
+                        out.append(['drop_item'])
                     if event.key == pg.K_p:
                         out.append(['pick_up'])
                     if event.key in (pg.K_UP, pg.K_w):
@@ -81,13 +82,13 @@ class Hud:
                                                               self.invent_p[0].get_size()[0], self.invent_p[0].get_size()[1]
                     lp_x, lp_y, lp_width, lp_height = self.launch_p[1][0], self.launch_p[1][1], \
                                                       self.launch_p[0].get_size()[0], self.launch_p[0].get_size()[1]
-                    if y > invp_y + 7:
+                    '''if y > invp_y + 7:
                         if invp_x + 5 < x < invp_x + invp_width: 
                             inv_index = (x - invp_x - 5) // self.pics['armor_icon'].get_size()[1]
                             if but1:
                                 out.append(['put_on', inv_index])
                             elif but3:
-                                out.append(['drop_item', inv_index])
+                                out.append(['drop_item', inv_index])'''
                     if lp_x < x < lp_x + lp_width and lp_y < y < lp_y + lp_height:
                         if but1:
                             row = (y - lp_y) // (lp_height // 3)
@@ -148,6 +149,7 @@ class Hud:
     def get_panel(self, inventory):
         pn = self.pics['panel']
         ar = self.pics['armor_icon']
+        sl = self.pics['arm_slider']
         out_surf = pg.Surface(pn.get_size(), pg.SRCALPHA)    
         out_surf.blit(pn,(0,0))
         asset_x, asset_y = 5, 7
@@ -155,6 +157,12 @@ class Hud:
             x_item = asset_x + i*ar.get_size()[0]  
             y_item = asset_y
             out_surf.blit(ar,(x_item, y_item))
+            act = item[1]
+            imp = item[2]
+            for index, act_it in zip(range(0,3), act):
+                x_slider = x_item + 41 + act_it * 12 / 100
+                y_slider = y_item + 5 + index * 8
+                out_surf.blit(sl,(x_slider, y_slider))
         return out_surf
 
     def get_launch_panel(self, prev_launch):

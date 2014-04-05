@@ -71,11 +71,27 @@ class Player(Game_obj):
                         rem_pickab.add(item)
                     else:
                         break
+        if self.inventory:
+            if  isinstance(self.inventory[-1], Armor):
+                self.armor = self.inventory[-1]
         for rem in rem_pickab:
             self.owner.qmes.put(['remove_item', rem])
     
-    def drop_item(self, index):
-        if index < len(self.inventory):
+    def drop_item(self):
+        if self.inventory:
+            to_drop = self.inventory.pop()
+            direc = -self.vel.normalized()
+            coor = []
+            if direc == vec(0,0):            
+                coor = [self.coord[0], self.coord[1] + self.radius + 20] #  20 is bag radius (10) + gap (10)
+            else:
+                coor = [self.coord[0] + direc.x * 40, self.coord[1] + direc.y * 40]     
+            to_drop.coord = coor
+            self.owner.qmes.put(['add_item', to_drop])
+            if  self.inventory:
+                if isinstance(self.inventory[-1], Armor):
+                    self.armor = self.inventory[-1]
+        '''if index < len(self.inventory):
             to_drop = self.inventory[index]
             direc = -self.vel.normalized()
             coor = []
@@ -86,14 +102,15 @@ class Player(Game_obj):
             to_drop.coord = coor
             del self.inventory[index]
             self.owner.qmes.put(['add_item', to_drop])
-        
-    def put_on(self, index):    
+        '''
+            
+    '''def put_on(self, index):    
         if index < len(self.inventory):
             if isinstance(self.inventory[index], Armor):
                 to_invent = self.armor
                 self.armor = self.inventory[index]
                 del self.inventory[index]
-                self.inventory.append(to_invent)
+                self.inventory.append(to_invent)'''
 
     def throw_fireball(self, magic, direction ):
         direc = vec(direction[0], direction[1]).normalized()
