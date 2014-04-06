@@ -45,8 +45,8 @@ def unpack_player_info(data):
     inventory = []
     while inv:
         if inv[0] == 'armor':
-            inventory += [['armor',[int(x) for x in inv[1:4]], [int(x) for x in inv[4:7]]]]
-            inv = inv[7:]
+            inventory += [['armor',[int(x) for x in inv[1:4]]]] #, [int(x) for x in inv[4:7]]]]
+            inv = inv[4:]
         else:
             inventory += [[inv[0], [int(x) for x in inv[1:4]] ]]
             inv = inv[4:]

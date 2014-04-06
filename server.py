@@ -45,14 +45,15 @@ class Server(threading.Thread):
                 invent = []
                 for item in player.inventory:
                     if item.obj_type == 'armor':
-                        invent += ['armor'] + [sr(x) for x in item.action] + [sr(x) for x in item.impact]
+                        invent += ['armor'] + [sr(x) for x in item.action] #+ [sr(x) for x in item.impact]
                     else:
                         invent += [item.obj_type] + [sr(x) for x in item.magic]
                 player_info = [sr(item) for item in (x,y,m1,m2,m3)] + invent
-                net.send_message_to(self.messenger, player_name, player_info +['lim'] +self.gameitems)
+                net.send_message_to(self.messenger, player_name, player_info +['lim'] + self.gameitems)
             passed_time = time.time() - start_time
             if passed_time < REFRESH_TIME:
                 time.sleep(REFRESH_TIME - passed_time)
+        self.messenger.runn = False
     def proceed_mess(self, message):
         # message = ['comand', 'name', 'arguments']
         if message[0] == 'join_game':

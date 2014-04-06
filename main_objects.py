@@ -72,14 +72,14 @@ class Player(Game_obj):
                     else:
                         break
         if self.inventory:
-            if  isinstance(self.inventory[-1], Armor):
-                self.armor = self.inventory[-1]
+            if  isinstance(self.inventory[0], Armor):
+                self.armor = self.inventory[0]
         for rem in rem_pickab:
             self.owner.qmes.put(['remove_item', rem])
     
     def drop_item(self):
         if self.inventory:
-            to_drop = self.inventory.pop()
+            to_drop = self.inventory.pop(0)
             direc = -self.vel.normalized()
             coor = []
             if direc == vec(0,0):            
@@ -89,28 +89,8 @@ class Player(Game_obj):
             to_drop.coord = coor
             self.owner.qmes.put(['add_item', to_drop])
             if  self.inventory:
-                if isinstance(self.inventory[-1], Armor):
-                    self.armor = self.inventory[-1]
-        '''if index < len(self.inventory):
-            to_drop = self.inventory[index]
-            direc = -self.vel.normalized()
-            coor = []
-            if direc == vec(0,0):            
-                coor = [self.coord[0], self.coord[1] + self.radius + 20] #  20 is bag radius (10) + gap (10)
-            else:
-                coor = [self.coord[0] + direc.x * 40, self.coord[1] + direc.y * 40]     
-            to_drop.coord = coor
-            del self.inventory[index]
-            self.owner.qmes.put(['add_item', to_drop])
-        '''
-            
-    '''def put_on(self, index):    
-        if index < len(self.inventory):
-            if isinstance(self.inventory[index], Armor):
-                to_invent = self.armor
-                self.armor = self.inventory[index]
-                del self.inventory[index]
-                self.inventory.append(to_invent)'''
+                if isinstance(self.inventory[0], Armor):
+                    self.armor = self.inventory[0]
 
     def throw_fireball(self, magic, direction ):
         direc = vec(direction[0], direction[1]).normalized()
@@ -149,10 +129,7 @@ class Fireball(Game_obj):
     def collide_with(self, other):
         if isinstance(other, Fireball):
             self.owner.qmes.put(['remove_item', other])
-        elif isinstance(other, Player):
-            mag = other.armor.make_impact(self.magic)
-            self.owner.qmes.put(['hit_item', mag[0], mag[1], mag[2], other])
-        elif isinstance(other, (Bag,Armor)):
+        elif isinstance(other, (Player, Bag, Armor)):
             self.owner.qmes.put(['hit_item', self.magic[0], self.magic[1], self.magic[2], other])
 
     def interact_with(self, other):
@@ -160,6 +137,7 @@ class Fireball(Game_obj):
             direction = vec(other.coord[0] - self.coord[0], other.coord[1] - self.coord[1])
             force=direction.normalized() * sum(x[0] * x[1] for x in zip(self.magic, other.magic)) / direction.length
             self.owner.qmes.put(['add_force', force.x, force.y, other])
+
 class Armor(Game_obj):
     def __init__(self, coord=None, action=None, impact=None):
         super(Armor, self).__init__(coord = coord, magic = [10,10,10])
@@ -170,9 +148,6 @@ class Armor(Game_obj):
         self.action = action if action else [0,0,0]
         self.impact = impact if impact else [0,0,0]
         self.obj_type = 'armor'        
-
-    def make_impact(self, magic):       
-        return [mg * (1-imp/100) for mg,imp in zip(magic, self.impact)]
     
     def make_action(self, magic):
         return [(1+abs(act)/100)*(lambda x: -1 if x<0 else 1)(act) * mag for act, mag in zip(self.action, magic)]

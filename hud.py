@@ -158,7 +158,6 @@ class Hud:
             y_item = asset_y
             out_surf.blit(ar,(x_item, y_item))
             act = item[1]
-            imp = item[2]
             for index, act_it in zip(range(0,3), act):
                 x_slider = x_item + 41 + act_it * 12 / 100
                 y_slider = y_item + 5 + index * 8

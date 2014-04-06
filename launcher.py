@@ -2,7 +2,7 @@ import tkinter as tk
 import server
 import client
 
-DEFAULT_PORT = 9043
+DEFAULT_PORT = 9044
 MAX_PLAYERS = 20
 
 class App:
@@ -41,8 +41,12 @@ class App:
             print(self.server.running)
     
     def close_launcher(self):
-        self.server.running = False
-        self.window.destroy()
+        try:
+            self.server.running = False
+        except AttributeError:
+            pass
+        finally:
+            self.window.destroy()
 
     def start(self):
         self.window.protocol('WM_DELETE_WINDOW', self.close_launcher)
