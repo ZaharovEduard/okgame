@@ -8,31 +8,25 @@ class Hud:
         self.win_size = self.win_x, self.win_y = win_size
         self.field_size = self.field_x, self.field_y = field_size
         self.pl_name = pl_name
+        self.prev_launch = [0,0,0]
+        self.prev_mov_dir = [0,0]
+        self.moving_direc = [0,0]
         try:        
             pg.init()
-            self.scr = pg.display.set_mode(win_size)    
-            ld = pg.image.load 
-            self.pics = {'player': ld(os.path.join('res','player.png')).convert_alpha(),
-                         'fireball': ld(os.path.join('res','fireball.png')).convert_alpha(),
-                         'spawner': ld(os.path.join('res','spawner.png')).convert_alpha(),
-                         'armor': ld(os.path.join('res','armor.png')).convert_alpha(),
-                         'panel': ld(os.path.join('res','inventory_panel.png')).convert_alpha(),
-                         'lifebar': ld(os.path.join('res','lifebar.png')).convert_alpha(),
-                         'armor_icon': ld(os.path.join('res','armor_icon.png')).convert_alpha(),
-                         'big_slider': ld(os.path.join('res','big_slider.png')).convert_alpha(),
-                         'small_slider': ld(os.path.join('res','small_slider.png')).convert_alpha(),
-                         'launch_panel': ld(os.path.join('res','launch_panel.png')).convert_alpha(),
-                         'arm_slider': ld(os.path.join('res','arm_slider.png')).convert_alpha(),
-                         'background': ld(os.path.join('res','background.png')).convert_alpha() }
+            self.scr = pg.display.set_mode(win_size)
+            self.font = pg.font.SysFont("sans",18)
+            ld = pg.image.load
+            self.pics = {}
+            names_list = ['player', 'fireball', 'spawner', 'armor', 'panel', 'lifebar', 'armor_icon', 'big_slider',
+                                  'small_slider', 'launch_panel', 'arm_slider', 'background']
+            for name in names_list:
+                self.pics[name] = ld(os.path.join('res', name + '.png')).convert_alpha() 
             self.pics['background'] = self.make_background(self.pics['background'], field_size)          
-            self.prev_launch = [0,0,0]
-            self.prev_mov_dir = [0,0]
-            self.moving_direc = [0,0]
             self.failed = False
         except:
             self.failed = True
 
-    def refresh(self, game_items, player_info):
+    def refresh(self, game_items, player_info, frags_dict):
         (pl_coord, pl_magic, pl_inventory) = player_info
         x_assert, y_assert = self.count_assertion(pl_coord)
         self.scr.blit(self.pics['background'],(-x_assert, -y_assert))
@@ -43,21 +37,24 @@ class Hud:
         mb = self.get_magicbar(pl_magic)
         ip = self.get_panel(pl_inventory)
         lp = self.get_launch_panel(self.prev_launch)
+        fr_inf = self.get_frags_info(frags_dict)
         self.mag_bar = (mb, (5,5))
         self.invent_p = (ip, (self.win_x // 2 - ip.get_size()[0] // 2, self.win_y - ip.get_size()[1]))
         self.launch_p = (lp, (self.win_x - lp.get_size()[0] - 5, self.win_y - lp.get_size()[1] - ip.get_size()[1] - 5))
+        self.frags_info = (fr_inf,(5, self.mag_bar[0].get_size()[1] + 20))
         self.scr.blit(*self.mag_bar)
         self.scr.blit(*self.invent_p)
         self.scr.blit(*self.launch_p)
+        self.scr.blit(*self.frags_info)
         pg.display.flip() 
         out= []
         for event in pg.event.get():
                 if event.type == pg.QUIT:
                     return False
                 elif event.type == pg.KEYDOWN:
-                    if event.key == pg.K_o:
+                    if event.key == pg.K_q:
                         out.append(['drop_item'])
-                    if event.key == pg.K_p:
+                    if event.key == pg.K_e:
                         out.append(['pick_up'])
                     if event.key in (pg.K_UP, pg.K_w):
                         self.moving_direc[1] = -1
@@ -82,13 +79,7 @@ class Hud:
                                                               self.invent_p[0].get_size()[0], self.invent_p[0].get_size()[1]
                     lp_x, lp_y, lp_width, lp_height = self.launch_p[1][0], self.launch_p[1][1], \
                                                       self.launch_p[0].get_size()[0], self.launch_p[0].get_size()[1]
-                    '''if y > invp_y + 7:
-                        if invp_x + 5 < x < invp_x + invp_width: 
-                            inv_index = (x - invp_x - 5) // self.pics['armor_icon'].get_size()[1]
-                            if but1:
-                                out.append(['put_on', inv_index])
-                            elif but3:
-                                out.append(['drop_item', inv_index])'''
+                    
                     if lp_x < x < lp_x + lp_width and lp_y < y < lp_y + lp_height:
                         if but1:
                             row = (y - lp_y) // (lp_height // 3)
@@ -107,6 +98,7 @@ class Hud:
             out.append(['move_to', self.moving_direc[0], self.moving_direc[1]])
         self.prev_mov_dir = self.moving_direc[:]    
         return out
+
 
     def count_assertion(self, pl_coord):
         if self.field_x - pl_coord[0] < self.win_x // 2:
@@ -132,6 +124,15 @@ class Hud:
         for i in range(0, x_times):
             for j in range(0, y_times):
                 out_surf.blit(back_tex,(i * b_x, j * b_y))
+        return out_surf
+    
+    def get_frags_info(self, fr_dict):
+        out_surf = pg.Surface((250,200), pg.SRCALPHA)
+        row = 0
+        for player, frags in fr_dict.items():
+            label = self.font.render(player+": "+frags, 1 ,(250,250,0))
+            out_surf.blit(label, (3, row * 15))
+            row +=1
         return out_surf
 
     def get_magicbar(self, magic):

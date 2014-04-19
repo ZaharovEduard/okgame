@@ -23,8 +23,10 @@ def receive_data(sock):
         return False
 
 def extract_info(in_data):
+    [pl_inf, items_inf, frags] = [dat.split() for dat in  in_data.split('lim')]
+    '''
     data = in_data.split()
-    pl_inf , items_inf= [], []
+    pl_inf , items_inf, frags = [], [], []
     limiter = False
     for word in data:
         if word == 'lim':
@@ -34,7 +36,8 @@ def extract_info(in_data):
             items_inf.append(word)
         else:
             pl_inf.append(word)
-    return (pl_inf, items_inf)
+    return (pl_inf, items_inf)'''
+    return (pl_inf, items_inf, frags)    
 
 def unpack_player_info(data):
     #data = player_data.split()
@@ -51,6 +54,13 @@ def unpack_player_info(data):
             inventory += [[inv[0], [int(x) for x in inv[1:4]] ]]
             inv = inv[4:]
     return ((x,y),magic, inventory)
+
+def unpack_frags(frags_info):
+    frags_dict = {}
+    while frags_info:
+        frags_dict[frags_info[0]] = frags_info[1]
+        frags_info = frags_info[2:]
+    return frags_dict
 
 def unpack_game_items_info(items_raw):
     #items_raw = items_info.split()
@@ -111,9 +121,9 @@ def game(serv_addr, serv_port, name, password):
         recv_data = receive_data(sock)
         if not recv_data:
             break
-        pl_raw, game_raw = extract_info(recv_data) 
-        pl_inf, game_items = unpack_player_info(pl_raw), unpack_game_items_info(game_raw)    
-        messages = cl_hud.refresh(game_items, pl_inf) 
+        pl_raw, game_raw, frags_raw = extract_info(recv_data) 
+        pl_inf, game_items , frags = unpack_player_info(pl_raw), unpack_game_items_info(game_raw), unpack_frags(frags_raw)  
+        messages = cl_hud.refresh(game_items, pl_inf, frags) 
         if messages == False:
             break
         for mess in messages:

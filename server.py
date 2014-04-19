@@ -22,7 +22,6 @@ class Server(threading.Thread):
         self.gameque = queue.Queue()
 
     def run(self):        
-        #print('server work started')
         self.running = True
         self.game = phys.Physics_server(qmes=self.gameque, owner=self)     
         self.game.start()        
@@ -39,17 +38,22 @@ class Server(threading.Thread):
             while not self.mess_queue.empty():
                 r_msg = self.mess_queue.get() 
                 self.proceed_mess(r_msg)
+
+            players_frags = []
+            for player_name , player in self.logged_players.items():
+                players_frags +=[player_name, str(player.frags)]
+
             for player_name, player in self.logged_players.items():
                 [x,y] = player.coord
                 [m1, m2, m3] = player.magic
                 invent = []
                 for item in player.inventory:
                     if item.obj_type == 'armor':
-                        invent += ['armor'] + [sr(x) for x in item.action] #+ [sr(x) for x in item.impact]
+                        invent += ['armor'] + [sr(x) for x in item.action]
                     else:
                         invent += [item.obj_type] + [sr(x) for x in item.magic]
                 player_info = [sr(item) for item in (x,y,m1,m2,m3)] + invent
-                net.send_message_to(self.messenger, player_name, player_info +['lim'] + self.gameitems)
+                net.send_message_to(self.messenger, player_name, player_info +['lim'] + self.gameitems + ['lim'] + players_frags)
             passed_time = time.time() - start_time
             if passed_time < REFRESH_TIME:
                 time.sleep(REFRESH_TIME - passed_time)
@@ -102,14 +106,6 @@ class Server(threading.Thread):
         elif message[1] == 'drop_item':
             #message = ['name' 'drop_item']
             player.drop_item()
-        
-        elif message[1] == 'put_on':
-            #message = ['name','put_on',  'index']
-            try: 
-                num = int(message[2]) 
-            except:
-                return
-            player.put_on(num)
 
         elif message[1] == 'leave_game':
             #message = ['name', 'leave_game']         
