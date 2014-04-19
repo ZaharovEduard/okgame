@@ -14,7 +14,8 @@ class Hud:
         try:        
             pg.init()
             self.scr = pg.display.set_mode(win_size)
-            self.font = pg.font.SysFont("sans",18)
+            font = 'arial' if 'arial' in pg.font.get_fonts() else 'sans'
+            self.font = pg.font.SysFont(font,18)
             ld = pg.image.load
             self.pics = {}
             names_list = ['player', 'fireball', 'spawner', 'armor', 'panel', 'lifebar', 'armor_icon', 'big_slider',
