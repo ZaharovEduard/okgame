@@ -134,6 +134,5 @@ def game(serv_addr, serv_port, name, password):
         if dt < 1 / REF_RATE:
             time.sleep(1/REF_RATE - dt)
     sock.send(form_mess(['leave_game']))
-    time.sleep(0.1)
     sock.close()
     cl_hud.stop()

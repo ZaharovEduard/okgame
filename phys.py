@@ -31,7 +31,6 @@ class Physics_server(threading.Thread):
         self.work()
 
     def work(self):
-            print('game work started')
             while self.running:
                 start_time = time.time()
 #---------------Message processing--------                
@@ -47,7 +46,8 @@ class Physics_server(threading.Thread):
                     ls = item.life_space
                     mg = item.magic                    
                      
-                    if not (ls[0][0] < mg[0] < ls[0][1] or ls[1][0] < mg[1] <ls[1][1] or ls[2][0] < mg[2] < ls[2][1]):                        
+                    #if not (ls[0][0] < mg[0] < ls[0][1] or ls[1][0] < mg[1] <ls[1][1] or ls[2][0] < mg[2] < ls[2][1]):                        
+                    if item.is_dead():                    
                         rem_items.add(item)                        
                     
                     vx, vy = item.vel.x + item.force.x/item.inertia, item.vel.y + item.force.y/item.inertia
@@ -78,7 +78,8 @@ class Physics_server(threading.Thread):
                             break     
                         otmag = other.magic
                         ls = other.life_space
-                        if not (ls[0][0] < otmag[0] < ls[0][1] and ls[1][0] < otmag[1] <ls[1][1] and ls[2][0] < otmag[2] < ls[2][1]):                   
+                        #if not (ls[0][0] < otmag[0] < ls[0][1] and ls[1][0] < otmag[1] <ls[1][1] and ls[2][0] < otmag[2] < ls[2][1]):                   
+                        if other.is_dead():
                             rem_items.add(other)      
                         else:
                             dist = self.distance(item, other)
@@ -103,8 +104,8 @@ class Physics_server(threading.Thread):
                                 drop_item.coord[1] = rem.coord[1] + y*10
                                 self.qmes.put(['force_add_item', drop_item ])   
                             init_magic = [mag if abs(mag) < 100 else 0 for mag in rem.magic] 
-                            new_arm = main_objects.Armor(action=init_magic, impact=[random.randint(0,50) for i in range(0,3)], coord=rem.coord)                        
-                            self.qmes.put(['force_add_item',new_arm])
+                            new_arm = main_objects.Armor(action=init_magic, coord=rem.coord)                        
+                            self.qmes.put(['force_add_item', new_arm])
                             rem.inventory = []
                             self.spawner.spawn(rem)
                         else:
@@ -157,10 +158,17 @@ class Physics_server(threading.Thread):
                 if item.pickable:
                     self.pickable_items.discard(item)
         elif message[0] == 'hit_item':
-            #message = ['hit', magic1, magic2, magic3, item]
-            [mag1, mag2, mag3, item] = message[1:]
+            #message = ['hit', hitter, item]
+            item = message[2]
+            f_ball = message[1]
+            
             if item in self.items:
-                    item.magic = [round(m+dm) for m, dm in zip(item.magic, [mag1,mag2,mag3])]
+                    item.magic = [round(m+dm) for m, dm in zip(item.magic, f_ball.magic)]
+                    if isinstance(item, main_objects.Player) and item.is_dead():
+                        if item == f_ball.firerer:
+                            f_ball.firerer.frags -= 1
+                        else:
+                            f_ball.firerer.frags += 1
 
         elif message[0] == 'add_force':
             #message = ['add_force', fx, fy , item]

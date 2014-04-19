@@ -34,11 +34,7 @@ class App:
     def run_server(self):
         self.server = server.Server(DEFAULT_PORT, MAX_PLAYERS)
         self.server.start()
-        print(self.start_button)
         self.start_button.config(state=tk.DISABLED)
-        print(self.server)
-        if self.server:
-            print(self.server.running)
     
     def close_launcher(self):
         try:

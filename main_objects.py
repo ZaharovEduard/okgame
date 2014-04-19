@@ -34,6 +34,13 @@ class Game_obj:
     def interact_with(self, other):    
         pass
 
+    def is_dead(self):
+        if self.life_space[0][0] < self.magic[0] < self.life_space[0][1] and \
+           self.life_space[1][0] < self.magic[1] < self.life_space[1][1] and \
+           self.life_space[0][0] < self.magic[0] < self.life_space[0][1]:
+            return False
+        else:
+            return True
 
 class Spawner(Game_obj):
     def __init__(self, coord):
@@ -60,7 +67,8 @@ class Player(Game_obj):
         self.inventory = []
         self.action_radius = 10
         self.obj_type = 'player'
-        self.inv_capacity = 10        
+        self.inv_capacity = 10  
+        self.frags = 0      
                 
     def pick_up(self):
         rem_pickab = set([])
@@ -96,7 +104,7 @@ class Player(Game_obj):
         direc = vec(direction[0], direction[1]).normalized()
         x = self.coord[0] + direc.x * (self.radius + 30) 
         y = self.coord[1] + direc.y * (self.radius + 30)             
-        fireball = Fireball([x,y],[1.5*self.strength * direc.x + self.vel.x, 1.5*self.strength * direc.y + self.vel.y], magic)                    
+        fireball = Fireball([x,y],[1.5*self.strength * direc.x + self.vel.x, 1.5*self.strength * direc.y + self.vel.y], magic, self)                    
         self.owner.qmes.put(['add_item',fireball])
     
     def move_to(self, direction):
@@ -119,9 +127,10 @@ class Player(Game_obj):
             self.owner.qmes.put(['add_force', force.x, force.y, other])
 
 class Fireball(Game_obj):
-    def __init__(self, coord=None , vel=None, magic=None):
+    def __init__(self, coord=None , vel=None, magic=None, firerer=None):
         super(Fireball, self).__init__(coord, vel, magic)
         self.radius = 5
+        self.firerer = firerer
         sq_sum_magic = math.sqrt(sum(x**2 for x in self.magic))
         self.inertia = 5 
         self.obj_type = 'fireball'        
@@ -129,8 +138,8 @@ class Fireball(Game_obj):
     def collide_with(self, other):
         if isinstance(other, Fireball):
             self.owner.qmes.put(['remove_item', other])
-        elif isinstance(other, (Player, Bag, Armor)):
-            self.owner.qmes.put(['hit_item', self.magic[0], self.magic[1], self.magic[2], other])
+        elif isinstance(other, (Player, Armor)):
+            self.owner.qmes.put(['hit_item', self, other])
 
     def interact_with(self, other):
         if isinstance(other, Fireball):
@@ -139,14 +148,13 @@ class Fireball(Game_obj):
             self.owner.qmes.put(['add_force', force.x, force.y, other])
 
 class Armor(Game_obj):
-    def __init__(self, coord=None, action=None, impact=None):
+    def __init__(self, coord=None, action=None):
         super(Armor, self).__init__(coord = coord, magic = [10,10,10])
         self.life_space = ([1,20],[1,20],[1,20])
         self.radius = 10
         self.inertia = 400
         self.pickable = True 
         self.action = action if action else [0,0,0]
-        self.impact = impact if impact else [0,0,0]
         self.obj_type = 'armor'        
     
     def make_action(self, magic):
