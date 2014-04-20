@@ -128,12 +128,22 @@ class Hud:
         return out_surf
     
     def get_frags_info(self, fr_dict):
-        out_surf = pg.Surface((250,200), pg.SRCALPHA)
+        color = (250,250,250)
+        out_surf = pg.Surface((220,200), pg.SRCALPHA)
+        name_surf = pg.Surface((120,200), pg.SRCALPHA)
+        score_surf = pg.Surface((100,200), pg.SRCALPHA)
         row = 0
         for player, frags in fr_dict.items():
-            label = self.font.render(player+": "+frags, 1 ,(250,250,0))
-            out_surf.blit(label, (3, row * 15))
+            '''label = self.font.render(player+": "+frags, 1 ,(250,250,0))
+            out_surf.blit(label, (3, row * 15))'''
+            if len(player) > 10:
+                name_surf.blit(self.font.render(player[0:9]+'...:', 1, color), (3, row*15))
+            else:
+                name_surf.blit(self.font.render(player+':', 1,color), (3,row * 15))
+            score_surf.blit(self.font.render(frags,1,color),(0, row * 15))
             row +=1
+        out_surf.blit(name_surf,(0,0))
+        out_surf.blit(score_surf,(120,0))
         return out_surf
 
     def get_magicbar(self, magic):

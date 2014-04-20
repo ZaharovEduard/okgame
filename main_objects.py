@@ -37,7 +37,7 @@ class Game_obj:
     def is_dead(self):
         if self.life_space[0][0] < self.magic[0] < self.life_space[0][1] and \
            self.life_space[1][0] < self.magic[1] < self.life_space[1][1] and \
-           self.life_space[0][0] < self.magic[0] < self.life_space[0][1]:
+           self.life_space[2][0] < self.magic[2] < self.life_space[2][1]:
             return False
         else:
             return True
