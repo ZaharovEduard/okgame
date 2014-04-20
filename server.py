@@ -102,7 +102,11 @@ class Server(threading.Thread):
         elif message[1] == 'pick_up':
             #message = ['name', 'pick_up']
             player.pick_up()
-    
+        elif message[1] == 'drop_pile':
+            #message = ['name','drop_pile']
+            if player.frags >= 5:
+                player.frags -= 5                
+                player.drop_pile()
         elif message[1] == 'drop_item':
             #message = ['name' 'drop_item']
             player.drop_item()

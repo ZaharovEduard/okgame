@@ -100,6 +100,16 @@ class Player(Game_obj):
                 if isinstance(self.inventory[0], Armor):
                     self.armor = self.inventory[0]
 
+    def drop_pile(self):
+        direc = -self.vel.normalized()
+        coor = []
+        if direc == vec(0,0):
+            coor = [self.coord[0], self.coord[1] + self.radius + 20]
+        else:
+            coor = [self.coord[0] + direc.x * 40, self.coord[1] + direc.y * 40]
+        pile = Pile(coor)
+        self.owner.qmes.put(['add_item', pile])
+
     def throw_fireball(self, magic, direction ):
         direc = vec(direction[0], direction[1]).normalized()
         x = self.coord[0] + direc.x * (self.radius + 30) 
@@ -131,14 +141,13 @@ class Fireball(Game_obj):
         super(Fireball, self).__init__(coord, vel, magic)
         self.radius = 5
         self.firerer = firerer
-        sq_sum_magic = math.sqrt(sum(x**2 for x in self.magic))
         self.inertia = 5 
         self.obj_type = 'fireball'        
 
     def collide_with(self, other):
         if isinstance(other, Fireball):
             self.owner.qmes.put(['remove_item', other])
-        elif isinstance(other, (Player, Armor)):
+        elif isinstance(other, (Player, Armor, Pile)):
             self.owner.qmes.put(['hit_item', self, other])
 
     def interact_with(self, other):
@@ -169,3 +178,23 @@ class Bag(Game_obj):
         self.inertia = 400
         self.pickable = True
         self.obj_type = 'bag'
+
+class Pile(Game_obj):
+    def __init__(self, coord=None):
+        super(Pile, self).__init__(coord=coord, magic = [0,0,0])
+        self.life_space = ([-20,20],[-20,20],[-20,20])
+        self.obj_type = 'pile'
+        self.radius = 10
+        self.inertia = 400
+        self.interacted = set()
+
+    def interact_with(self, other):
+        dist = math.sqrt((self.coord[0] - other.coord[0])**2 + (self.coord[1] - other.coord[1])**2)
+        if dist < 100:
+            if other not in self.interacted:        
+                self.interacted.add(other)
+                other.vel /=8
+        else:
+            if other in self.interacted:
+                self.interacted.remove(other)
+                other.vel *=8

@@ -19,7 +19,7 @@ class Hud:
             ld = pg.image.load
             self.pics = {}
             names_list = ['player', 'fireball', 'spawner', 'armor', 'panel', 'lifebar', 'armor_icon', 'big_slider',
-                                  'small_slider', 'launch_panel', 'arm_slider', 'background']
+                                  'small_slider', 'launch_panel', 'pile','arm_slider', 'background']
             for name in names_list:
                 self.pics[name] = ld(os.path.join('res', name + '.png')).convert_alpha() 
             self.pics['background'] = self.make_background(self.pics['background'], field_size)          
@@ -59,6 +59,8 @@ class Hud:
                         out.append(['pick_up'])
                     if event.key in (pg.K_UP, pg.K_w):
                         self.moving_direc[1] = -1
+                    if event.key == pg.K_z:
+                        out.append(['drop_pile'])
                     if event.key in (pg.K_DOWN, pg.K_s):
                         self.moving_direc[1] = 1
                     if event.key in (pg.K_RIGHT, pg.K_d):
@@ -128,7 +130,7 @@ class Hud:
         return out_surf
     
     def get_frags_info(self, fr_dict):
-        color = (250,250,250)
+        color = (0,0,0)
         out_surf = pg.Surface((220,200), pg.SRCALPHA)
         name_surf = pg.Surface((120,200), pg.SRCALPHA)
         score_surf = pg.Surface((100,200), pg.SRCALPHA)

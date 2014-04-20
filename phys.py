@@ -164,7 +164,6 @@ class Physics_server(threading.Thread):
             
             if item in self.items:
                     item.magic = [round(m+dm) for m, dm in zip(item.magic, f_ball.magic)]
-                    print(item.magic)
                     if isinstance(item, main_objects.Player) and item.is_dead():
                         if item == f_ball.firerer:
                             f_ball.firerer.frags -= 1
