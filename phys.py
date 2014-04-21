@@ -37,7 +37,7 @@ class Physics_server(threading.Thread):
                 mess_size = self.qmes.qsize() 
                 if mess_size != 0:
                     for i in range(0, mess_size):
-                        
+                         
                         mess = self.qmes.get()            
                         self.proceed_mess(mess)
 #----------------All interactions---------

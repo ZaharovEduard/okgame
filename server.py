@@ -99,6 +99,14 @@ class Server(threading.Thread):
                 return            
             player.throw_fireball(magic, direction)
 
+        elif message[1] == 'drop_mine':
+            #message = ['name', 'drop_mine', 'mag1', 'mag2', 'mag3']
+            try:
+                magic = [int(mg) for mg in message[2:5]]
+            except:
+                return
+            player.drop_mine(magic)
+
         elif message[1] == 'pick_up':
             #message = ['name', 'pick_up']
             player.pick_up()

@@ -18,7 +18,7 @@ class Hud:
             self.font = pg.font.SysFont(font,18)
             ld = pg.image.load
             self.pics = {}
-            names_list = ['player', 'fireball', 'spawner', 'armor', 'panel', 'lifebar', 'armor_icon', 'big_slider',
+            names_list = ['player', 'fireball', 'spawner', 'armor', 'panel', 'lifebar', 'mine', 'armor_icon', 'big_slider',
                                   'small_slider', 'launch_panel', 'pile','arm_slider', 'background']
             for name in names_list:
                 self.pics[name] = ld(os.path.join('res', name + '.png')).convert_alpha() 
@@ -63,6 +63,8 @@ class Hud:
                         out.append(['drop_pile'])
                     if event.key in (pg.K_DOWN, pg.K_s):
                         self.moving_direc[1] = 1
+                    if event.key == pg.K_x:
+                        out.append(['drop_mine'] + self.prev_launch)
                     if event.key in (pg.K_RIGHT, pg.K_d):
                         self.moving_direc[0] = 1
                     if event.key in (pg.K_LEFT, pg.K_a):

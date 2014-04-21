@@ -100,6 +100,16 @@ class Player(Game_obj):
                 if isinstance(self.inventory[0], Armor):
                     self.armor = self.inventory[0]
 
+    def drop_mine(self, magic):
+        direc = -self.vel.normalized()
+        coor = []
+        if direc == vec(0,0):
+            coor = [int(self.coord[0]), int(self.coord[1] + self.radius + 40)]
+        else:
+            coor = [int(self.coord[0] + direc.x * 60), int(self.coord[1] + direc.y * 60)]
+        mine = Mine(coord=coor, magic=magic, firerer=self)
+        self.owner.qmes.put(['add_item', mine])   
+
     def drop_pile(self):
         direc = -self.vel.normalized()
         coor = []
@@ -123,7 +133,7 @@ class Player(Game_obj):
         if self.owner:
             self.owner.qmes.put(['set_vel', speed*direction.x, speed*direction.y, self])
     def collide_with(self,other):
-        if isinstance(other, Fireball): 
+        if isinstance(other, (Fireball, Mine)): 
             self.owner.qmes.put(['remove_item',other])
         elif isinstance(other,Spawner):
             pass
@@ -147,7 +157,7 @@ class Fireball(Game_obj):
     def collide_with(self, other):
         if isinstance(other, Fireball):
             self.owner.qmes.put(['remove_item', other])
-        elif isinstance(other, (Player, Armor, Pile)):
+        elif isinstance(other, (Player, Armor, Pile, Mine)):
             self.owner.qmes.put(['hit_item', self, other])
 
     def interact_with(self, other):
@@ -181,7 +191,7 @@ class Bag(Game_obj):
 
 class Pile(Game_obj):
     def __init__(self, coord=None):
-        super(Pile, self).__init__(coord=coord, magic = [0,0,0])
+        super(Pile, self).__init__(coord=coord, magic=[0,0,0])
         self.life_space = ([-20,20],[-20,20],[-20,20])
         self.obj_type = 'pile'
         self.radius = 10
@@ -189,12 +199,39 @@ class Pile(Game_obj):
         self.interacted = set()
 
     def interact_with(self, other):
-        dist = math.sqrt((self.coord[0] - other.coord[0])**2 + (self.coord[1] - other.coord[1])**2)
-        if dist < 100:
-            if other not in self.interacted:        
-                self.interacted.add(other)
-                other.vel /=8
+        if isinstance(other, Fireball):
+            dist = math.sqrt((self.coord[0] - other.coord[0])**2 + (self.coord[1] - other.coord[1])**2)
+            if dist < 100:
+                if other not in self.interacted:        
+                    self.interacted.add(other)
+                    other.vel /= 8
+            else:
+                if other in self.interacted:
+                    self.interacted.remove(other)
+                    other.vel *= 8
+
+class Mine(Game_obj):
+    def __init__(self, coord=None, magic=[0,0,0], firerer=None):
+        super(Mine, self).__init__(coord=coord, magic=magic)
+        self.life_space = ([-100, 100], [-100, 100], [-100, 100])
+        self.obj_type = 'mine'
+        self.radius = 20
+        self.inertia = 200
+        self.target = None
+        self.speed = 200 - 1/3 * sum([abs(x) for x in magic])
+        self.firerer = firerer
+        self.pickable = False
+
+    def interact_with(self, other):
+        if not self.target:
+            if isinstance(other, Player) and not (other is self.firerer):
+                self.target = other
         else:
-            if other in self.interacted:
-                self.interacted.remove(other)
-                other.vel *=8
+            self.vel = vec(self.target.coord[0] - self.coord[0], self.target.coord[1] - self.coord[1]).normalized() * self.speed
+
+    def collide_with(self, other):
+        if isinstance(other, (Player, Armor, Pile, Mine)):
+            self.owner.qmes.put(['hit_item', self, other])
+        if isinstance(other, Fireball):
+            self.owner.qmes.put(['remove_item', other])
+
