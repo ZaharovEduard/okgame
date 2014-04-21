@@ -100,12 +100,15 @@ class Server(threading.Thread):
             player.throw_fireball(magic, direction)
 
         elif message[1] == 'drop_mine':
+            if player.frags >= 10:
+                
             #message = ['name', 'drop_mine', 'mag1', 'mag2', 'mag3']
-            try:
-                magic = [int(mg) for mg in message[2:5]]
-            except:
-                return
-            player.drop_mine(magic)
+                try:
+                    magic = [int(mg) for mg in message[2:5]]
+                    player.drop_mine(magic)
+                    player.frags -= 10
+                except:
+                    return
 
         elif message[1] == 'pick_up':
             #message = ['name', 'pick_up']
