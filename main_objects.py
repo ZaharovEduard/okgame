@@ -197,6 +197,7 @@ class Pile(Game_obj):
         self.radius = 10
         self.inertia = 400
         self.interacted = set()
+        self.bullet_time_rate = 4
 
     def interact_with(self, other):
         if isinstance(other, Fireball):
@@ -204,16 +205,16 @@ class Pile(Game_obj):
             if dist < 100:
                 if other not in self.interacted:        
                     self.interacted.add(other)
-                    other.vel /= 8
+                    other.vel /= self.bullet_time_rate
             else:
                 if other in self.interacted:
                     self.interacted.remove(other)
-                    other.vel *= 8
+                    other.vel *= self.bullet_time_rate
 
 class Mine(Game_obj):
     def __init__(self, coord=None, magic=[0,0,0], firerer=None):
         super(Mine, self).__init__(coord=coord, magic=magic)
-        self.life_space = ([-100, 100], [-100, 100], [-100, 100])
+        self.life_space = ([-1000, 1000], [-1000, 1000], [-1000, 1000])
         self.obj_type = 'mine'
         self.radius = 20
         self.inertia = 200
