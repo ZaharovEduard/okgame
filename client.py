@@ -11,15 +11,16 @@ import pygame as pg
 import hud
 
 REF_RATE = 70
-TIMEOUT = 10
+TIMEOUT = 3
 SIZE = (800,600)
 BYTES_IN_HEADER = 8
 
 class Receiver(threading.Thread):
-    def __init__(self, socket, in_queue):
+    def __init__(self, socket, in_queue, owner):
         super(Receiver,self).__init__()
         self.socket = socket
         self.in_queue = in_queue
+        self.owner = owner
     
     def recv_data(self):
         read_sock, _, _ = select.select([self.socket],[],[],TIMEOUT)
@@ -92,10 +93,12 @@ class Receiver(threading.Thread):
                 pl_raw, game_raw, frags_raw = self.extract_info(recv_data)
             #while not self.in_queue.empty():
             #    self.in_queue.get()
-                for i in range(1, self.in_queue.qsize()):
-                    self.in_queue.get()            
-                self.in_queue.put( (self.unp_game_items_info(game_raw), self.unp_pl_info(pl_raw), self.unp_frags_info(frags_raw)))
-            
+            #    for i in range(1, self.in_queue.qsize()):
+             #       self.in_queue.get()            
+             #   self.in_queue.put( (self.unp_game_items_info(game_raw), self.unp_pl_info(pl_raw), self.unp_frags_info(frags_raw)))
+                self.owner.game_state = (self.unp_game_items_info(game_raw), self.unp_pl_info(pl_raw), self.unp_frags_info(frags_raw))           
+            else:
+                self.owner.game_state = False
         
 class Sender(threading.Thread):
     def __init__(self, socket, out_queue):
@@ -120,48 +123,56 @@ class Sender(threading.Thread):
             while not self.out_queue.empty():
                 msg = self.out_queue.get()
                 self.socket.send(self.form_mess(msg))
+class Game:
+    def __init__(self, serv_addr, serv_port, name, password):
+        self.serv_addr = serv_addr
+        self.serv_port = serv_port
+        self.name = name
+        self.password = password
 
-def game(serv_addr, serv_port, name, password):
-    sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    try:
-        sock.connect((serv_addr, serv_port))
-    except:
-        sock.close()
-        return False
-    in_queue = queue.Queue()
-    recver = Receiver(sock, in_queue)
-    out_queue = queue.Queue()
-    sender = Sender(sock, out_queue)
-    sender.start()
-    out_queue.put(['join_game', name, password])
-    field_size = recver.recv_inits()
-    if not field_size:
-        return False
-    cl_hud = hud.Hud(SIZE, field_size, name)
-    if cl_hud.failed:
-        return False
-    recver.start()
-    prev_state = ([],(0,0,[]),{name: 0})
-    while True:
-        start_time = time.time()
+    def game(self):
+        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         try:
-            (game_items, pl_inf, frags) = in_queue.get()
+         sock.connect((self.serv_addr, self.serv_port))
         except:
-            (game_items, pl_inf, frags) = prev_state
-        messages = cl_hud.refresh(game_items, pl_inf, frags)
-        prev_state = (game_items, pl_inf, frags)
-        if messages == False:
-            break
-        for mess in messages:
-            out_queue.put(mess)
-        end_time = time.time()
-        dt = end_time - start_time
-        #if dt < 1 / REF_RATE:
-        #    time.sleep(1 / REF_RATE - dt)
-    out_queue.put(['leave_game'])
-    recver.running = False
-    sender.running = False
-    recver.join()
-    sender.join()
-    sock.close()
-    cl_hud.stop()
+            sock.close()
+            print('not connect')
+            return False
+        in_queue = queue.Queue()
+        recver = Receiver(sock, in_queue, self)
+        out_queue = queue.Queue()
+        sender = Sender(sock, out_queue)
+        sender.start()
+        out_queue.put(['join_game', self.name, self.password])
+        field_size = recver.recv_inits()
+        if not field_size:
+            print('not field')
+            return False
+        cl_hud = hud.Hud(SIZE, field_size, self.name)
+        if cl_hud.failed:
+            print('not hud')
+            return False
+        recver.start()
+        self.game_state = ([], ([0,0], [0,0,0], []), {self.name: '0'})
+        while True:
+            start_time = time.time()
+            if self.game_state:
+                messages = cl_hud.refresh(*self.game_state)
+            else:
+                print('hud tatat')
+                break
+            if messages == False:
+                break
+            for mess in messages:
+                out_queue.put(mess)
+            end_time = time.time()
+            dt = end_time - start_time
+            if dt < 1 / REF_RATE:
+                time.sleep(1 / REF_RATE - dt)
+        out_queue.put(['leave_game'])
+        recver.running = False
+        sender.running = False
+        recver.join()
+        sender.join()
+        sock.close()
+        cl_hud.stop()

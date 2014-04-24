@@ -1,3 +1,4 @@
+import multiprocessing
 import threading
 import time
 import math
@@ -8,21 +9,20 @@ import net
 import main_objects
 
 REFRESH_TIME = 0.02
-class Server(threading.Thread):
-    def __init__(self, port, max_users):
+class Server(multiprocessing.Process):
+    def __init__(self, port, max_users, in_queue):
         super(Server, self).__init__()
         self.game = None
         self.all_players = {}
         self.logged_players = {}
         self.gameitems =[]
-        
+        self.manag_que = in_queue
         self.mess_queue = queue.Queue()
         self.messenger = net.Messenger(self.mess_queue, port, max_users)
         #all_players = { name: [password, bool-Online?, player]}
         self.gameque = queue.Queue()
 
     def run(self):        
-        self.running = True
         self.game = phys.Physics_server(qmes=self.gameque, owner=self)     
         self.game.start()        
         self.messenger.start()
@@ -33,7 +33,11 @@ class Server(threading.Thread):
     def work(self):
         def sr(x):
             return str(round(x))
-        while self.running:
+        running = True
+        while  running:
+            if not self.manag_que.empty():
+                if self.manag_que.get() == 'stop':
+                    running = False
             start_time = time.time()
             while not self.mess_queue.empty():
                 r_msg = self.mess_queue.get() 
@@ -57,7 +61,9 @@ class Server(threading.Thread):
             passed_time = time.time() - start_time
             if passed_time < REFRESH_TIME:
                 time.sleep(REFRESH_TIME - passed_time)
+
         self.messenger.runn = False
+    
     def proceed_mess(self, message):
         # message = ['comand', 'name', 'arguments']
         if message[0] == 'join_game':
@@ -79,6 +85,7 @@ class Server(threading.Thread):
                 self.exec_mess(self.logged_players[message[0]], message)
             else:
                 net.send_message_to(self.messenger, message[0], ['not_logged'])
+
 
 
     def exec_mess(self, player, message):

@@ -1,3 +1,4 @@
+import multiprocessing
 import tkinter as tk
 import server
 import client
@@ -25,45 +26,33 @@ class App:
         self.server_change = tk.Button(self.window, text='Run server', command = self.change_server_state)
         self.server_change.grid(row=4,column=1)
         self.run_state = True
+        self.man_que = multiprocessing.Queue()
     
     def join_game(self):
         address = self.addr_entr.get()
         name = self.name_entr.get()
         password = self.password_entr.get()
-        client.game(address, DEFAULT_PORT, name, password)
-    
-    '''def stop_server(self):
-        try:
-            self.server.running = False
-        except AttributeError:
-            pass
-        finally:
-            
-            self.start_button.config(state=tk.NORMAL)'''
+        gam = client.Game(address, DEFAULT_PORT,name, password)
+        gam.game()
 
     def change_server_state(self):
         if self.run_state:
-            self.server = server.Server(DEFAULT_PORT, MAX_PLAYERS)
+            self.server = server.Server(DEFAULT_PORT, MAX_PLAYERS, self.man_que)
             self.server.start() 
             self.server_change.config(text='Stop server')
             self.run_state = False
         else:
             try:
-                self.server.running = False
+                self.man_que.put('stop')
             except AttributeError:
                 pass
             finally:
                 self.server_change.config(text='Start server')
                 self.run_state = True     
 
-    def run_server(self):
-        self.server = server.Server(DEFAULT_PORT, MAX_PLAYERS)
-        self.server.start()
-        self.start_button.config(state=tk.DISABLED)
-    
     def close_launcher(self):
         try:
-            self.server.running = False
+            self.man_que.put('stop')
         except AttributeError:
             pass
         finally:

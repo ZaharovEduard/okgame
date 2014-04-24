@@ -31,6 +31,7 @@ class Physics_server(threading.Thread):
         self.work()
 
     def work(self):
+            jj=0
             while self.running:
                 start_time = time.time()
 #---------------Message processing--------                
@@ -69,16 +70,13 @@ class Physics_server(threading.Thread):
                         setvel = True
                     
                     item.coord = [x,y]
-                    if isinstance(item, main_objects.Fireball):
+                    if item.obj_type == 'fireball':
                         if     self.field_size[0] - item.radius - 1 < x or x < item.radius + 1 \
                             or self.field_size[1] - item.radius - 1 < y or y < item.radius + 1:
                             rem_items.add(item)
                     for other in self.items[::-1]:
                         if other == item:
                             break     
-                        otmag = other.magic
-                        ls = other.life_space
-                        #if not (ls[0][0] < otmag[0] < ls[0][1] and ls[1][0] < otmag[1] <ls[1][1] and ls[2][0] < otmag[2] < ls[2][1]):                   
                         if other.is_dead():
                             rem_items.add(other)      
                         else:
@@ -96,7 +94,7 @@ class Physics_server(threading.Thread):
                 
                 for rem in rem_items:
                     if rem in self.items:
-                        if isinstance(rem, main_objects.Player):
+                        if rem.obj_type == 'player':
                             self.items.remove(rem)
                             for drop_item in rem.inventory:
                                 x,y = random.random()* 2 -1, random.random()* 2 -1
@@ -119,6 +117,9 @@ class Physics_server(threading.Thread):
                 self.owner.gameitems = items_str
 
                 time_passed = time.time() - start_time
+                '''jj+=1
+                if jj%30==0:
+                    print(time_passed)'''
                 if time_passed < self.step:
                     time.sleep( self.step - time_passed)
 #-------------------------------------------
